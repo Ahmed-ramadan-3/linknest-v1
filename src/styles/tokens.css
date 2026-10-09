@@ -1,0 +1,140 @@
+/* Design tokens. Every colour in the app comes from here, so a theme is a handful of variables. */
+
+:root {
+  color-scheme: light;
+
+  /* Typography: system fonts only (fast, offline, and they cover Arabic). */
+  --font-sans: 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, 'Noto Sans Arabic',
+    'Geeza Pro', Tahoma, 'Helvetica Neue', Arial, sans-serif;
+  --font-display: ui-serif, 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Noto Naskh Arabic',
+    'Geeza Pro', serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Code', 'JetBrains Mono', Consolas, 'Liberation Mono', monospace;
+
+  /* Surface and ink: warm ivory, charcoal text. */
+  --bg: #f3eee4;
+  --bg-2: #e9e2d3;
+  --ink: #25221d;
+  --ink-2: #5a544a;
+  --ink-3: #6f685b;
+  --surface: rgba(255, 252, 246, 0.58);
+  --surface-card: rgba(255, 253, 248, 0.74);
+  --surface-strong: rgba(255, 253, 249, 0.88);
+  --surface-solid: #fbf8f1;
+  --field: rgba(255, 255, 255, 0.62);
+  --line: rgba(70, 58, 40, 0.12);
+  --line-strong: rgba(70, 58, 40, 0.22);
+  --highlight: rgba(255, 255, 255, 0.78);
+  --scrim: rgba(24, 18, 10, 0.4);
+  --hover: rgba(70, 58, 40, 0.07);
+
+  /* One restrained accent: clay. */
+  --accent: #a4572f;
+  --accent-ink: #fff7ef;
+  --accent-soft: rgba(164, 87, 47, 0.12);
+  --accent-line: rgba(164, 87, 47, 0.38);
+
+  --danger: #b03a2e;
+  --danger-soft: rgba(176, 58, 46, 0.1);
+  --ok: #3d7a56;
+  --warn: #8a6516;
+  --warn-soft: rgba(176, 130, 30, 0.14);
+
+  /* Muted tints for category nodes and generated thumbnails. */
+  --tint-1-bg: #ead5c6;
+  --tint-1-fg: #8a4a28;
+  --tint-2-bg: #d5dfd0;
+  --tint-2-fg: #44663f;
+  --tint-3-bg: #e7dcc0;
+  --tint-3-fg: #75601f;
+  --tint-4-bg: #d3dbe0;
+  --tint-4-fg: #3f5c6b;
+  --tint-5-bg: #e8d3d4;
+  --tint-5-fg: #864650;
+  --tint-6-bg: #dcdcc0;
+  --tint-6-fg: #5d5f26;
+
+  /* Ambient background light. */
+  --ambient-a: rgba(214, 160, 120, 0.34);
+  --ambient-b: rgba(150, 172, 142, 0.3);
+  --ambient-c: rgba(255, 255, 255, 0.7);
+  --grain-opacity: 0.05;
+  --grain-blend: multiply;
+
+  --shadow-1: 0 1px 2px rgba(50, 38, 20, 0.06), 0 2px 8px rgba(50, 38, 20, 0.05);
+  --shadow-2: 0 2px 4px rgba(50, 38, 20, 0.05), 0 14px 34px rgba(50, 38, 20, 0.1);
+  --shadow-3: 0 28px 70px rgba(30, 22, 10, 0.24);
+
+  --blur: 18px;
+  --radius-s: 8px;
+  --radius-m: 12px;
+  --radius-l: 18px;
+  --radius-xl: 24px;
+
+  --ease: cubic-bezier(0.22, 0.8, 0.28, 1);
+  --spring: cubic-bezier(0.2, 0.9, 0.3, 1.18);
+  --dur-fast: 0.15s;
+  --dur: 0.28s;
+
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #111113;
+  --bg-2: #18181b;
+  --ink: #ece8df;
+  --ink-2: #b2aca0;
+  --ink-3: #8f897e;
+  --surface: rgba(40, 39, 43, 0.52);
+  --surface-card: rgba(36, 35, 39, 0.7);
+  --surface-strong: rgba(32, 31, 35, 0.9);
+  --surface-solid: #1d1c20;
+  --field: rgba(255, 255, 255, 0.055);
+  --line: rgba(255, 255, 255, 0.09);
+  --line-strong: rgba(255, 255, 255, 0.18);
+  --highlight: rgba(255, 255, 255, 0.07);
+  --scrim: rgba(0, 0, 0, 0.55);
+  --hover: rgba(255, 255, 255, 0.07);
+
+  --accent: #e0a070;
+  --accent-ink: #1b130d;
+  --accent-soft: rgba(224, 160, 112, 0.15);
+  --accent-line: rgba(224, 160, 112, 0.4);
+
+  --danger: #ec8173;
+  --danger-soft: rgba(236, 129, 115, 0.13);
+  --ok: #86c79f;
+  --warn: #e0bd6e;
+  --warn-soft: rgba(224, 189, 110, 0.13);
+
+  --tint-1-bg: #3a2b22;
+  --tint-1-fg: #e2ab86;
+  --tint-2-bg: #26342a;
+  --tint-2-fg: #aacda4;
+  --tint-3-bg: #38321f;
+  --tint-3-fg: #dec47c;
+  --tint-4-bg: #252f36;
+  --tint-4-fg: #a1c0cf;
+  --tint-5-bg: #382629;
+  --tint-5-fg: #dca5ac;
+  --tint-6-bg: #333420;
+  --tint-6-fg: #cacb80;
+
+  --ambient-a: rgba(190, 120, 80, 0.15);
+  --ambient-b: rgba(70, 104, 94, 0.18);
+  --ambient-c: rgba(255, 255, 255, 0.035);
+  --grain-opacity: 0.07;
+  --grain-blend: overlay;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.25);
+  --shadow-2: 0 2px 4px rgba(0, 0, 0, 0.35), 0 16px 38px rgba(0, 0, 0, 0.4);
+  --shadow-3: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+
+.accent-clay { --node-bg: var(--tint-1-bg); --node-fg: var(--tint-1-fg); }
+.accent-sage { --node-bg: var(--tint-2-bg); --node-fg: var(--tint-2-fg); }
+.accent-sand { --node-bg: var(--tint-3-bg); --node-fg: var(--tint-3-fg); }
+.accent-slate { --node-bg: var(--tint-4-bg); --node-fg: var(--tint-4-fg); }
+.accent-rose { --node-bg: var(--tint-5-bg); --node-fg: var(--tint-5-fg); }
+.accent-olive { --node-bg: var(--tint-6-bg); --node-fg: var(--tint-6-fg); }

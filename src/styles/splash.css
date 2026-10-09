@@ -1,0 +1,166 @@
+/* Intro screen (5 seconds) and the static boot fallback shown before JavaScript runs. */
+
+.splash,
+.boot {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  text-align: center;
+  color: var(--ink);
+  background:
+    radial-gradient(60% 50% at 50% 38%, var(--ambient-c), transparent 70%),
+    radial-gradient(80% 70% at 10% 0%, var(--ambient-a), transparent 65%),
+    radial-gradient(80% 70% at 100% 100%, var(--ambient-b), transparent 65%),
+    var(--bg);
+  transition:
+    opacity 0.52s var(--ease),
+    transform 0.52s var(--ease),
+    filter 0.52s var(--ease);
+}
+
+.splash.is-leaving {
+  opacity: 0;
+  transform: scale(1.04);
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+.splash__content {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+  max-width: 420px;
+}
+
+.splash__mark {
+  display: grid;
+  place-items: center;
+  width: 148px;
+  height: 148px;
+  margin-block-end: 6px;
+  border-radius: 40px;
+  color: var(--accent);
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-2), inset 0 1px 0 var(--highlight);
+  animation: rise 0.9s var(--ease) both;
+}
+
+.splash__name {
+  font-family: var(--font-display);
+  font-size: clamp(34px, 8vw, 46px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  animation: rise 0.9s var(--ease) 0.7s both;
+}
+
+.splash__tagline {
+  max-width: 34ch;
+  color: var(--ink-2);
+  animation: rise 0.9s var(--ease) 1.2s both;
+}
+
+.splash__bar {
+  width: 168px;
+  height: 3px;
+  margin-block-start: 14px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--line);
+  animation: rise 0.6s var(--ease) 1.4s both;
+}
+
+.splash__bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+  transform-origin: left center;
+  animation: progress linear both;
+}
+
+[dir='rtl'] .splash__bar span {
+  transform-origin: right center;
+}
+
+.splash__skip {
+  position: absolute;
+  inset-block-end: max(28px, var(--safe-bottom));
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+  animation: rise 0.5s var(--ease) both;
+}
+
+.splash__skip:hover {
+  color: var(--ink);
+  background: var(--surface-strong);
+}
+
+/* Logo drawing animation */
+.logo-mark--animated .logo-mark__link {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 1.5s var(--ease) forwards;
+}
+
+.logo-mark--animated .logo-mark__link--b {
+  animation-delay: 0.35s;
+}
+
+.logo-mark--animated .logo-mark__node {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0;
+  animation:
+    node-in 0.6s var(--spring) forwards,
+    node-pulse 2.8s ease-in-out infinite;
+}
+
+.logo-mark--animated .logo-mark__node--1 { animation-delay: 1.3s, 2s; }
+.logo-mark--animated .logo-mark__node--2 { animation-delay: 1.6s, 2.4s; }
+.logo-mark--animated .logo-mark__node--3 { animation-delay: 1.9s, 2.8s; }
+
+.boot__text {
+  color: var(--ink-2);
+}
+
+/* If the script never starts (blocked, offline without cache), say so after a few seconds. */
+.boot__error {
+  margin-block-start: 8px;
+  max-width: 36ch;
+  color: var(--ink-2);
+  opacity: 0;
+  animation: rise 0.5s var(--ease) 8s forwards;
+}
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes progress {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes draw {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes node-in {
+  from { opacity: 0; transform: scale(0); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes node-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}

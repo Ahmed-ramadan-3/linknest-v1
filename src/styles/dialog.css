@@ -1,0 +1,374 @@
+/* Modal dialogs (native <dialog>). Bottom sheets on phones. */
+
+dialog.dialog {
+  width: min(calc(100vw - 24px), 560px);
+  max-width: none;
+  max-height: none;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  overflow: visible;
+}
+
+dialog.dialog--sm { width: min(calc(100vw - 24px), 440px); }
+dialog.dialog--lg { width: min(calc(100vw - 24px), 760px); }
+
+.dialog::backdrop {
+  background: var(--scrim);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  animation: fade-in 0.24s var(--ease) both;
+}
+
+.dialog.is-closing::backdrop {
+  animation: fade-out 0.16s var(--ease) both;
+}
+
+.dialog__panel {
+  display: flex;
+  flex-direction: column;
+  max-height: min(90dvh, 880px);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-3), inset 0 1px 0 var(--highlight);
+  overflow: hidden;
+  animation: dialog-in 0.36s var(--spring) both;
+}
+
+.dialog.is-closing .dialog__panel {
+  animation: dialog-out 0.16s var(--ease) both;
+}
+
+.dialog__header {
+  position: relative;
+  padding: 20px 56px 6px 24px;
+}
+
+[dir='rtl'] .dialog__header {
+  padding: 20px 24px 6px 56px;
+}
+
+.dialog__title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.dialog__description {
+  margin-block-start: 4px;
+  color: var(--ink-2);
+  font-size: 13.5px;
+}
+
+.dialog__close {
+  position: absolute;
+  inset-block-start: 14px;
+  inset-inline-end: 14px;
+}
+
+.dialog__body {
+  flex: 1;
+  min-height: 0;
+  padding: 14px 24px 22px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.dialog__footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 24px calc(16px + var(--safe-bottom));
+  border-block-start: 1px solid var(--line);
+  background: color-mix(in srgb, var(--surface-solid) 60%, transparent);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+}
+
+@keyframes fade-out {
+  to { opacity: 0; }
+}
+
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(14px) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes dialog-out {
+  to { opacity: 0; transform: translateY(8px) scale(0.98); }
+}
+
+@keyframes sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+
+@keyframes sheet-out {
+  to { transform: translateY(100%); }
+}
+
+@media (max-width: 639px) {
+  dialog.dialog,
+  dialog.dialog--sm,
+  dialog.dialog--lg {
+    width: 100%;
+    max-width: 100%;
+    margin: auto 0 0;
+  }
+
+  .dialog__panel {
+    max-height: 94dvh;
+    border-end-start-radius: 0;
+    border-end-end-radius: 0;
+    animation: sheet-in 0.4s var(--ease) both;
+  }
+
+  .dialog.is-closing .dialog__panel {
+    animation: sheet-out 0.18s var(--ease) both;
+  }
+
+  .dialog__header {
+    padding-inline-start: 18px;
+  }
+
+  .dialog__body {
+    padding-inline: 18px;
+  }
+
+  .dialog__footer {
+    padding-inline: 18px;
+  }
+
+  .dialog__footer .button {
+    flex: 1 1 auto;
+  }
+
+  /* Grab handle hint */
+  .dialog__panel::before {
+    content: '';
+    align-self: center;
+    flex: none;
+    width: 38px;
+    height: 4px;
+    margin-block-start: 8px;
+    border-radius: 999px;
+    background: var(--line-strong);
+  }
+}
+
+/* Detail view and settings */
+.detail {
+  display: grid;
+  gap: 16px;
+}
+
+.detail__media {
+  aspect-ratio: 16 / 9;
+  max-height: 300px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-l);
+  border: 1px solid var(--line);
+}
+
+.detail__badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.detail__url {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: var(--ink-3);
+  font-size: 13.5px;
+}
+
+.detail__url .icon {
+  margin-block-start: 3px;
+}
+
+.detail__url a {
+  overflow-wrap: anywhere;
+}
+
+.detail__text {
+  color: var(--ink);
+}
+
+.detail__text--pre {
+  white-space: pre-wrap;
+}
+
+.detail__section {
+  display: grid;
+  gap: 8px;
+}
+
+.detail__section h3,
+.detail__section-head h3 {
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.detail__section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.prompt-box {
+  max-height: 300px;
+  margin: 0;
+  padding: 14px 16px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-m);
+  background: var(--field);
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  line-height: 1.6;
+  tab-size: 2;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.meta-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 12px;
+  margin: 0;
+  padding-block-start: 14px;
+  border-block-start: 1px solid var(--line);
+}
+
+.meta-list dt {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-3);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.meta-list dd {
+  margin: 2px 0 0;
+  font-size: 13.5px;
+}
+
+.detail__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.detail__actions-end {
+  display: flex;
+  gap: 2px;
+  margin-inline-start: auto;
+}
+
+.settings {
+  display: grid;
+  gap: 26px;
+}
+
+.settings__section {
+  display: grid;
+  gap: 12px;
+}
+
+.settings__section--danger {
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+  border-radius: var(--radius-l);
+  background: var(--danger-soft);
+}
+
+.settings__heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.settings__heading .icon {
+  color: var(--accent);
+}
+
+.setting-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+}
+
+.setting-row__title {
+  font-weight: 600;
+}
+
+.setting-row__hint {
+  color: var(--ink-2);
+  font-size: 13.5px;
+}
+
+.button-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.stat-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px 16px;
+  margin: 0;
+}
+
+.stat-list dt {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.stat-list dd {
+  margin: 0;
+  font-weight: 650;
+}
+
+.import-preview {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius-l);
+}
+
+.import-preview__warnings {
+  display: grid;
+  gap: 4px;
+  padding-inline-start: 18px;
+  list-style: disc;
+  color: var(--warn);
+  font-size: 13px;
+}
+
+.radio-group {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}

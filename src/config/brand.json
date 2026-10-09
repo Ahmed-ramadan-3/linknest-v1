@@ -1,0 +1,8 @@
+{
+  "name": "LinkNest",
+  "shortName": "LinkNest",
+  "tagline": "Your personal space for links, videos, prompts & digital resources.",
+  "description": "A private, local-first organizer for links, videos, prompts and programming resources.",
+  "themeColorLight": "#f4efe6",
+  "themeColorDark": "#121214"
+}

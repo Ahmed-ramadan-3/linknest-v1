@@ -1,0 +1,85 @@
+/* Glass surfaces and the ambient background. */
+
+.glass,
+.glass-strong {
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-1), inset 0 1px 0 var(--highlight);
+  -webkit-backdrop-filter: blur(var(--blur)) saturate(1.25);
+  backdrop-filter: blur(var(--blur)) saturate(1.25);
+}
+
+.glass {
+  background: var(--surface);
+}
+
+.glass-strong {
+  background: var(--surface-strong);
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass,
+  .glass-strong {
+    background: var(--surface-solid);
+  }
+}
+
+/* Ambient background: soft blurred light, no grid, no particles. */
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 8% -10%, var(--bg-2) 0%, transparent 60%),
+    var(--bg);
+}
+
+.ambient__shape {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(90px);
+  will-change: transform;
+}
+
+.ambient__shape--a {
+  inset-block-start: -18vmax;
+  inset-inline-start: -12vmax;
+  width: 52vmax;
+  height: 52vmax;
+  background: radial-gradient(circle, var(--ambient-a), transparent 68%);
+  animation: drift-a 48s ease-in-out infinite alternate;
+}
+
+.ambient__shape--b {
+  inset-block-end: -22vmax;
+  inset-inline-end: -14vmax;
+  width: 58vmax;
+  height: 58vmax;
+  background: radial-gradient(circle, var(--ambient-b), transparent 68%);
+  animation: drift-b 60s ease-in-out infinite alternate;
+}
+
+.ambient__shape--c {
+  inset-block-start: 30%;
+  inset-inline-start: 38%;
+  width: 34vmax;
+  height: 34vmax;
+  background: radial-gradient(circle, var(--ambient-c), transparent 70%);
+}
+
+.ambient__grain {
+  position: absolute;
+  inset: 0;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: var(--grain-blend);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@keyframes drift-a {
+  to { transform: translate3d(6vmax, 5vmax, 0) scale(1.08); }
+}
+
+@keyframes drift-b {
+  to { transform: translate3d(-7vmax, -4vmax, 0) scale(1.1); }
+}
