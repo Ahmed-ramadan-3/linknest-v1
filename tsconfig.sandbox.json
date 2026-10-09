@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": [
+      "node"
+    ],
+    "paths": {
+      "react": [
+        "./tools/sandbox-types/react/index.d.ts"
+      ],
+      "react/jsx-runtime": [
+        "./tools/sandbox-types/react/jsx-runtime.d.ts"
+      ],
+      "react-dom/client": [
+        "./tools/sandbox-types/react-dom/client.d.ts"
+      ]
+    }
+  },
+  "include": [
+    "src",
+    "tests/**/*.ts"
+  ]
+}

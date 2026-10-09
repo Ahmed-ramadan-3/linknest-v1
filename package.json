@@ -1,0 +1,35 @@
+{
+  "name": "linknest",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Your personal space for links, videos, prompts & digital resources. Local-first, no backend.",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "npm run typecheck && node scripts/build.mjs",
+    "preview": "node scripts/preview.mjs",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "tsc -p tsconfig.json --noEmit --noUnusedLocals --noUnusedParameters",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "test:e2e": "node tests/e2e/smoke.mjs",
+    "check": "npm run typecheck && npm run lint && npm test && node scripts/build.mjs"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-icons": "^5.5.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "esbuild": "^0.25.0",
+    "playwright-core": "^1.50.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0"
+  }
+}

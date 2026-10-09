@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <!--
+      Content Security Policy. A <meta> tag is used so static hosts (GitHub Pages) are covered;
+      vercel.json adds the same policy as a header plus frame-ancestors, which meta cannot set.
+      - script-src 'self': no inline scripts and no eval.
+      - style-src 'self': React applies inline styles through the CSSOM, which CSP does not block.
+      - img-src https: is required because saved thumbnail URLs can point at any https site;
+        the Settings page lets the user switch remote images off entirely.
+      - data: images are used only for the built-in grain texture.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data: https:; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'"
+    />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <title>LinkNest</title>
+    <meta name="description" content="Your personal space for links, videos, prompts &amp; digital resources." />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#f4efe6" />
+    <link rel="icon" href="./icons/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+    <link rel="manifest" href="./manifest.webmanifest" />
+    <script src="./theme-init.js"></script>
+    <!--ASSETS-->
+  </head>
+  <body>
+    <noscript>LinkNest needs JavaScript to run. Nothing is sent to any server.</noscript>
+    <div id="root">
+      <div class="boot" role="status">
+        <div>
+          <p class="boot__text">Loading LinkNest…</p>
+          <p class="boot__error">
+            Still here? Your browser may be blocking scripts. Try reloading, or a different browser.
+          </p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
