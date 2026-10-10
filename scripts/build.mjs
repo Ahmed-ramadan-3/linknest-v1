@@ -22,6 +22,8 @@ const result = await build({
   entryPoints: [join(root, 'src/main.tsx')],
   outdir: join(dist, 'assets'),
   entryNames: '[name]-[hash]',
+  chunkNames: 'chunks/[name]-[hash]',
+  splitting: true,
   bundle: true,
   minify: true,
   sourcemap: false,
@@ -38,8 +40,12 @@ const result = await build({
 await cp(join(root, 'public'), dist, { recursive: true });
 
 const outputs = Object.keys(result.metafile.outputs).map((file) => relative(dist, resolve(root, file)).replaceAll('\\', '/'));
-const js = outputs.find((file) => file.endsWith('.js'));
+const entryOutput = Object.entries(result.metafile.outputs).find(([, info]) => info.entryPoint)?.[0];
+const js = entryOutput ? relative(dist, resolve(root, entryOutput)).replaceAll('\\', '/') : undefined;
 const css = outputs.find((file) => file.endsWith('.css'));
+const initialChunks = Object.entries(result.metafile.outputs)
+  .filter(([, info]) => !info.entryPoint)
+  .map(([file]) => relative(dist, resolve(root, file)).replaceAll('\\', '/'));
 if (!js || !css) throw new Error('Build did not produce both a script and a stylesheet');
 
 const tags = `<link rel="stylesheet" href="./${css}" />\n    <script type="module" src="./${js}"></script>`;
@@ -50,7 +56,7 @@ const shell = (await walk(dist))
   .map((file) => relative(dist, file).replaceAll('\\', '/'))
   .filter((file) => file !== 'sw.js' && !file.endsWith('.map'));
 const precache = ['./', ...shell.map((file) => `./${file}`)];
-const version = createHash('sha256').update(precache.join('|')).update(await readFile(join(dist, js))).digest('hex').slice(0, 12);
+const version = createHash('sha256').update(precache.join('|')).update(await readFile(join(dist, js))).update(initialChunks.join('|')).digest('hex').slice(0, 12);
 
 const sw = (await readFile(join(dist, 'sw.js'), 'utf8'))
   .replaceAll('__VERSION__', version)

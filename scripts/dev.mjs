@@ -22,6 +22,8 @@ const ctx = await context({
   bundle: true,
   sourcemap: true,
   format: 'esm',
+  splitting: true,
+  chunkNames: 'chunks/[name]-[hash]',
   target: 'es2022',
   jsx: 'automatic',
   define: { __DEV__: 'true', 'process.env.NODE_ENV': '"development"' },
