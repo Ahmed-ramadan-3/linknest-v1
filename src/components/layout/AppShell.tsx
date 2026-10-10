@@ -1,6 +1,8 @@
 import { LuTriangleAlert } from 'react-icons/lu';
 import { useAppUi } from '../../hooks/useAppUi';
+import { useIsDesktop } from '../../hooks/useMediaQuery';
 import { useLibrary } from '../../hooks/useLibrary';
+import { useI18n } from '../../i18n';
 import { Dashboard } from '../../pages/Dashboard';
 import { LibraryPage } from '../../pages/LibraryPage';
 import { ModalHost } from '../modals/ModalHost';
@@ -8,21 +10,27 @@ import { MobileNav } from '../navigation/MobileNav';
 import { Sidebar } from '../navigation/Sidebar';
 import { Drawer } from './Drawer';
 import { Header } from './Header';
+import { useSettings } from '../../hooks/useSettings';
 
 export function AppShell({ inert }: { inert: boolean }) {
   const { route } = useAppUi();
   const { status, notice, retry } = useLibrary();
+  const { t } = useI18n();
+  const { settings } = useSettings();
+  const isDesktop = useIsDesktop();
+  const sidebarHidden = settings.sidebarHidden;
 
   return (
-    <div className="shell" inert={inert}>
+    <div className="shell" inert={inert} data-sidebar={sidebarHidden ? 'hidden' : 'shown'}>
       <a href="#main" className="skip-link" onClick={(event) => {
         event.preventDefault();
         document.getElementById('main')?.focus();
       }}>
-        Skip to content
+        {t('nav.skip')}
       </a>
-      <aside className="shell__sidebar glass">
-        <Sidebar />
+      {/* The tree is only built where it is visible: here on desktop, in the drawer elsewhere. */}
+      <aside id="library-sidebar" className="shell__sidebar glass" inert={sidebarHidden} aria-hidden={sidebarHidden}>
+        {isDesktop ? <Sidebar /> : null}
       </aside>
       <div className="shell__content">
         <Header />
@@ -34,14 +42,14 @@ export function AppShell({ inert }: { inert: boolean }) {
           ) : null}
 
           {status === 'loading' ? (
-            <p className="muted" role="status">Opening your library…</p>
+            <p className="muted" role="status">{t('shell.opening')}</p>
           ) : status === 'error' ? (
             <div className="empty glass" role="alert">
-              <h2 className="empty__title">Your library could not be opened</h2>
+              <h2 className="empty__title">{t('shell.errorTitle')}</h2>
               <p className="empty__message">{notice}</p>
               <div className="empty__actions">
                 <button type="button" className="button button--primary" onClick={retry}>
-                  Try again
+                  {t('common.tryAgain')}
                 </button>
               </div>
             </div>

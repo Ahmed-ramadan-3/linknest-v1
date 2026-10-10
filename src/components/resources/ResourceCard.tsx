@@ -1,9 +1,9 @@
 import { memo } from 'react';
-import { PLATFORM_META, RESOURCE_TYPE_META } from '../../config/app';
-import { useAppUi } from '../../hooks/useAppUi';
-import { useLibrary } from '../../hooks/useLibrary';
+import { RESOURCE_TYPE_META } from '../../config/app';
+import { useAppUiActions } from '../../hooks/useAppUi';
+import { useI18n } from '../../i18n';
 import { formatDate } from '../../lib/format';
-import { pathLabel } from '../../lib/categories/tree';
+import { platformLabel, typeLabel } from '../../lib/labels';
 import { hostLabel } from '../../lib/url';
 import type { Resource } from '../../types';
 import { Icon } from '../ui/icons';
@@ -12,11 +12,18 @@ import { CopyAction, DeleteButton, EditButton, FavoriteButton, OpenLink } from '
 
 const MAX_VISIBLE_TAGS = 3;
 
-function ResourceCardBase({ resource }: { resource: Resource }) {
-  const { categoryById } = useLibrary();
-  const { openModal, setFilters } = useAppUi();
+interface Props {
+  resource: Resource;
+  /** Breadcrumb text such as "Programming › Frontend". Passed in so the card does not depend on the whole library. */
+  categoryPath: string;
+}
+
+function ResourceCardBase({ resource, categoryPath }: Props) {
+  const { openModal, setFilters } = useAppUiActions();
+  const { t } = useI18n();
   const meta = RESOURCE_TYPE_META[resource.type];
-  const platformLabel = resource.platform && resource.platform !== 'other' ? PLATFORM_META[resource.platform].label : null;
+  const badgeLabel =
+    resource.platform && resource.platform !== 'other' ? platformLabel(resource.platform) : typeLabel(resource.type);
   const source = resource.url ? hostLabel(resource.url) : '';
   const extraTags = resource.tags.length - MAX_VISIBLE_TAGS;
   const isPrompt = resource.type === 'prompt';
@@ -31,7 +38,7 @@ function ResourceCardBase({ resource }: { resource: Resource }) {
         )}
         <span className="badge badge--float">
           <Icon name={meta.icon} size={13} />
-          {platformLabel ?? meta.label}
+          {badgeLabel}
         </span>
         <div className="card__favorite">
           <FavoriteButton resource={resource} />
@@ -53,14 +60,14 @@ function ResourceCardBase({ resource }: { resource: Resource }) {
 
         <p className="card__crumb">
           <Icon name="folder" size={13} />
-          <span>{pathLabel(categoryById, resource.categoryId)}</span>
+          <span>{categoryPath}</span>
         </p>
 
         {resource.tags.length > 0 ? (
-          <ul className="chips" aria-label="Tags">
+          <ul className="chips" aria-label={t('card.tags')}>
             {resource.tags.slice(0, MAX_VISIBLE_TAGS).map((tag) => (
               <li key={tag}>
-                <button type="button" className="chip" onClick={() => setFilters({ tags: [tag] })} title={`Filter by ${tag}`}>
+                <button type="button" className="chip" onClick={() => setFilters({ tags: [tag] })} title={t('card.filterBy', { tag })}>
                   #{tag}
                 </button>
               </li>

@@ -12,7 +12,8 @@ import {
   LuTriangleAlert,
   LuUpload,
 } from 'react-icons/lu';
-import { APP_DESCRIPTION, APP_NAME, APP_TAGLINE, APP_VERSION, LIMITS } from '../../config/app';
+import { APP_NAME, APP_VERSION, LIMITS } from '../../config/app';
+import { NATIVE_NAME, useI18n } from '../../i18n';
 import { buildBackup, parseBackup, serializeBackup, type ParsedBackup } from '../../data/backup';
 import { describeStorageError } from '../../data/db';
 import { useAppUi } from '../../hooks/useAppUi';
@@ -20,33 +21,29 @@ import { useLibrary } from '../../hooks/useLibrary';
 import { useSettings } from '../../hooks/useSettings';
 import { useToast } from '../../hooks/useToast';
 import { backupFilename, downloadTextFile } from '../../lib/download';
-import { formatBytes, formatDateTime, pluralize } from '../../lib/format';
+import { formatBytes, formatDateTime } from '../../lib/format';
 import {
   approximateDataBytes,
   getBrowserStorageInfo,
   requestPersistentStorage,
   type BrowserStorageInfo,
 } from '../../lib/storage';
-import { MOTION_MODES, type MotionMode, type ThemeMode } from '../../types';
+import { LANGUAGES, MOTION_MODES, PERFORMANCE_MODES, type ThemeMode } from '../../types';
 import { ConfirmDialog } from '../ui/ConfirmDialog';
 import { Dialog } from '../ui/Dialog';
 
-const THEME_OPTIONS: { value: ThemeMode; label: string; icon: typeof LuSun }[] = [
-  { value: 'system', label: 'System', icon: LuMonitor },
-  { value: 'light', label: 'Light', icon: LuSun },
-  { value: 'dark', label: 'Dark', icon: LuMoon },
+const THEME_OPTIONS: { value: ThemeMode; icon: typeof LuSun }[] = [
+  { value: 'system', icon: LuMonitor },
+  { value: 'light', icon: LuSun },
+  { value: 'dark', icon: LuMoon },
 ];
-const MOTION_LABEL: Record<MotionMode, string> = {
-  system: 'Follow system',
-  reduce: 'Reduce motion',
-  full: 'Allow motion',
-};
 
 export function SettingsDialog() {
   const { closeModal } = useAppUi();
   const { settings, update, reset: resetSettings, persisted } = useSettings();
   const library = useLibrary();
   const toast = useToast();
+  const { t, plural } = useI18n();
 
   const [storageInfo, setStorageInfo] = useState<BrowserStorageInfo | null>(null);
   const [parsed, setParsed] = useState<ParsedBackup | null>(null);
@@ -74,7 +71,7 @@ export function SettingsDialog() {
     const backup = buildBackup(library.snapshot(), settings);
     downloadTextFile(backupFilename(), serializeBackup(backup));
     update({ lastExportAt: backup.exportedAt });
-    toast.success('Backup downloaded');
+    toast.success(t('toast.backupDownloaded'));
   };
 
   const onFile = async (event: ChangeEvent<HTMLInputElement>) => {
@@ -85,7 +82,7 @@ export function SettingsDialog() {
     if (!file) return;
     setFileName(file.name);
     if (file.size > LIMITS.importFileBytes) {
-      setImportError('This file is too large to be a LinkNest backup.');
+      setImportError(t('import.tooLarge'));
       return;
     }
     try {
@@ -93,7 +90,7 @@ export function SettingsDialog() {
       if (result.ok) setParsed(result.backup);
       else setImportError(result.error);
     } catch {
-      setImportError('This file could not be read.');
+      setImportError(t('import.unreadable'));
     }
   };
 
@@ -105,11 +102,16 @@ export function SettingsDialog() {
       if (parsed.settings.theme || parsed.settings.motion || parsed.settings.remoteThumbnails !== undefined) {
         update(parsed.settings);
       }
-      toast.success(
-        mode === 'replace'
-          ? `Restored ${pluralize(parsed.data.resources.length, 'resource')}`
-          : `Imported ${pluralize(summary?.resourcesAdded ?? 0, 'new resource')}${summary && summary.resourcesUpdated ? `, updated ${summary.resourcesUpdated}` : ''}`,
-      );
+      if (mode === 'replace') {
+        toast.success(t('toast.restored', { resources: plural('count.resource', parsed.data.resources.length) }));
+      } else {
+        const added = plural('count.newResource', summary?.resourcesAdded ?? 0);
+        toast.success(
+          summary && summary.resourcesUpdated
+            ? t('toast.importedUpdated', { resources: added, updated: summary.resourcesUpdated })
+            : t('toast.imported', { resources: added }),
+        );
+      }
       setParsed(null);
       setFileName('');
     } catch (error) {
@@ -124,7 +126,7 @@ export function SettingsDialog() {
     try {
       await library.resetAll();
       resetSettings();
-      toast.success('All local data was removed');
+      toast.success(t('toast.resetDone'));
       setConfirmReset(false);
       closeModal();
     } catch (error) {
@@ -135,25 +137,25 @@ export function SettingsDialog() {
   const persist = async () => {
     const granted = await requestPersistentStorage();
     setStorageInfo(await getBrowserStorageInfo());
-    if (granted) toast.success('Your browser will try to keep this data');
-    else toast.show('Your browser did not grant persistent storage. Keep a backup.', 'info');
+    if (granted) toast.success(t('toast.persistOk'));
+    else toast.show(t('toast.persistNo'), 'info');
   };
 
   return (
     <>
-      <Dialog title="Settings" size="lg" onClose={closeModal}>
+      <Dialog title={t('settings.title')} size="lg" onClose={closeModal}>
         <div className="settings">
           <section className="settings__section" aria-labelledby="set-appearance">
             <h3 id="set-appearance" className="settings__heading">
-              <LuPalette className="icon" size={17} aria-hidden="true" /> Appearance
+              <LuPalette className="icon" size={17} aria-hidden="true" /> {t('settings.appearance')}
             </h3>
             <div className="setting-row">
               <div>
-                <p className="setting-row__title" id="set-theme-label">Theme</p>
-                <p className="setting-row__hint">System follows your device.</p>
+                <p className="setting-row__title" id="set-theme-label">{t('settings.theme')}</p>
+                <p className="setting-row__hint">{t('settings.themeHint')}</p>
               </div>
               <div className="segmented" role="radiogroup" aria-labelledby="set-theme-label">
-                {THEME_OPTIONS.map(({ value, label, icon: Glyph }) => (
+                {THEME_OPTIONS.map(({ value, icon: Glyph }) => (
                   <button
                     key={value}
                     type="button"
@@ -163,15 +165,36 @@ export function SettingsDialog() {
                     onClick={() => update({ theme: value })}
                   >
                     <Glyph className="icon" size={15} aria-hidden="true" />
-                    {label}
+                    {t(`theme.${value}`)}
                   </button>
                 ))}
               </div>
             </div>
             <div className="setting-row">
               <div>
-                <p className="setting-row__title" id="set-motion-label">Motion</p>
-                <p className="setting-row__hint">Reduces animations for comfort.</p>
+                <p className="setting-row__title" id="set-language-label">{t('settings.language')}</p>
+                <p className="setting-row__hint">{t('settings.languageHint')}</p>
+              </div>
+              <div className="segmented" role="radiogroup" aria-labelledby="set-language-label">
+                {LANGUAGES.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    lang={value}
+                    aria-checked={settings.language === value}
+                    className={`segmented__item${settings.language === value ? ' is-selected' : ''}`}
+                    onClick={() => update({ language: value })}
+                  >
+                    {NATIVE_NAME[value]}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="setting-row">
+              <div>
+                <p className="setting-row__title" id="set-motion-label">{t('settings.motion')}</p>
+                <p className="setting-row__hint">{t('settings.motionHint')}</p>
               </div>
               <div className="segmented" role="radiogroup" aria-labelledby="set-motion-label">
                 {MOTION_MODES.map((value) => (
@@ -183,24 +206,44 @@ export function SettingsDialog() {
                     className={`segmented__item${settings.motion === value ? ' is-selected' : ''}`}
                     onClick={() => update({ motion: value })}
                   >
-                    {MOTION_LABEL[value]}
+                    {t(`settings.motion.${value}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="setting-row">
+              <div>
+                <p className="setting-row__title" id="set-perf-label">{t('settings.performance')}</p>
+                <p className="setting-row__hint">{t('settings.performanceHint')}</p>
+              </div>
+              <div className="segmented" role="radiogroup" aria-labelledby="set-perf-label">
+                {PERFORMANCE_MODES.map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={settings.performance === value}
+                    className={`segmented__item${settings.performance === value ? ' is-selected' : ''}`}
+                    onClick={() => update({ performance: value })}
+                  >
+                    {t(`settings.performance.${value}`)}
                   </button>
                 ))}
               </div>
             </div>
             {!persisted ? (
               <p className="notice notice--warn">
-                Your browser blocked saving preferences, so these settings last only until you close this tab.
+                {t('settings.notPersisted')}
               </p>
             ) : null}
           </section>
 
           <section className="settings__section" aria-labelledby="set-privacy">
             <h3 id="set-privacy" className="settings__heading">
-              <LuShieldCheck className="icon" size={17} aria-hidden="true" /> Privacy
+              <LuShieldCheck className="icon" size={17} aria-hidden="true" /> {t('settings.privacy')}
             </h3>
             <p className="setting-row__hint">
-              Everything you save stays in this browser. {APP_NAME} has no account, no server and no analytics.
+              {t('settings.privacyBody', { name: APP_NAME })}
             </p>
             <label className="check">
               <input
@@ -209,30 +252,26 @@ export function SettingsDialog() {
                 onChange={(event) => update({ remoteThumbnails: event.target.checked })}
               />
               <span>
-                Load preview images from their source
-                <small className="check__hint">
-                  When on, your browser requests thumbnails (such as YouTube) directly from those sites. Turn off to
-                  make no outside requests at all.
-                </small>
+                {t('settings.remoteThumbs')}
+                <small className="check__hint">{t('settings.remoteThumbsHint')}</small>
               </span>
             </label>
           </section>
 
           <section className="settings__section" aria-labelledby="set-data">
             <h3 id="set-data" className="settings__heading">
-              <LuDownload className="icon" size={17} aria-hidden="true" /> Backup &amp; restore
+              <LuDownload className="icon" size={17} aria-hidden="true" /> {t('settings.backup')}
             </h3>
             <p className="setting-row__hint">
-              Because data lives only in this browser, export a backup before clearing browser data or switching
-              devices.
-              {settings.lastExportAt ? ` Last backup: ${formatDateTime(settings.lastExportAt)}.` : ' You have not exported a backup yet.'}
+              {t('settings.backupBody')}
+              {settings.lastExportAt ? t('settings.lastBackup', { date: formatDateTime(settings.lastExportAt) }) : t('settings.noBackup')}
             </p>
             <div className="button-row">
               <button type="button" className="button button--soft" onClick={exportData}>
-                <LuDownload className="icon" size={16} aria-hidden="true" /> Export JSON
+                <LuDownload className="icon" size={16} aria-hidden="true" /> {t('settings.export')}
               </button>
               <button type="button" className="button button--soft" onClick={() => fileInput.current?.click()}>
-                <LuUpload className="icon" size={16} aria-hidden="true" /> Import JSON…
+                <LuUpload className="icon" size={16} aria-hidden="true" /> {t('settings.import')}
               </button>
               <input
                 ref={fileInput}
@@ -240,7 +279,7 @@ export function SettingsDialog() {
                 accept="application/json,.json"
                 className="visually-hidden"
                 tabIndex={-1}
-                aria-label="Choose a LinkNest backup file"
+                aria-label={t('settings.chooseFile')}
                 onChange={onFile}
               />
             </div>
@@ -254,9 +293,12 @@ export function SettingsDialog() {
             {parsed ? (
               <div className="import-preview glass">
                 <p className="import-preview__title">
-                  <strong>{fileName}</strong> contains {pluralize(parsed.data.resources.length, 'resource')} and{' '}
-                  {pluralize(parsed.data.categories.length, 'category', 'categories')}
-                  {parsed.exportedAt ? ` (exported ${formatDateTime(parsed.exportedAt)})` : ''}.
+                  {t('settings.fileContains', {
+                    file: `“${fileName}”`,
+                    resources: plural('count.resource', parsed.data.resources.length),
+                    categories: plural('count.category', parsed.data.categories.length),
+                  })}
+                  {parsed.exportedAt ? t('settings.exportedOn', { date: formatDateTime(parsed.exportedAt) }) : ''}.
                 </p>
                 {parsed.warnings.length > 0 ? (
                   <ul className="import-preview__warnings">
@@ -266,19 +308,19 @@ export function SettingsDialog() {
                   </ul>
                 ) : null}
                 <fieldset className="radio-group">
-                  <legend className="visually-hidden">Import mode</legend>
+                  <legend className="visually-hidden">{t('settings.importMode')}</legend>
                   <label className="radio">
                     <input type="radio" name="import-mode" checked={mode === 'merge'} onChange={() => setMode('merge')} />
                     <span>
-                      Merge with my current data
-                      <small className="check__hint">Adds new items. If the same item exists, the most recently edited copy wins. Nothing is deleted.</small>
+                      {t('settings.merge')}
+                      <small className="check__hint">{t('settings.mergeHint')}</small>
                     </span>
                   </label>
                   <label className="radio">
                     <input type="radio" name="import-mode" checked={mode === 'replace'} onChange={() => setMode('replace')} />
                     <span>
-                      Replace everything
-                      <small className="check__hint">Deletes the {pluralize(library.resources.length, 'resource')} currently saved here and uses only this file.</small>
+                      {t('settings.replace')}
+                      <small className="check__hint">{t('settings.replaceHint', { resources: plural('count.resource', library.resources.length) })}</small>
                     </span>
                   </label>
                 </fieldset>
@@ -289,10 +331,10 @@ export function SettingsDialog() {
                     disabled={importing}
                     onClick={() => (mode === 'replace' ? setConfirmReplace(true) : void runImport())}
                   >
-                    {mode === 'replace' ? 'Replace and import' : 'Merge and import'}
+                    {mode === 'replace' ? t('settings.replaceAndImport') : t('settings.mergeAndImport')}
                   </button>
                   <button type="button" className="button button--ghost" onClick={() => setParsed(null)}>
-                    Cancel
+                    {t('common.cancel')}
                   </button>
                 </div>
               </div>
@@ -301,55 +343,59 @@ export function SettingsDialog() {
 
           <section className="settings__section" aria-labelledby="set-storage">
             <h3 id="set-storage" className="settings__heading">
-              <LuHardDrive className="icon" size={17} aria-hidden="true" /> Storage
+              <LuHardDrive className="icon" size={17} aria-hidden="true" /> {t('settings.storage')}
             </h3>
             <p className="setting-row__hint">
               {library.persistent
-                ? 'Your resources are stored locally in this browser (IndexedDB) on this device.'
-                : 'Storage is unavailable, so data is only kept until this tab closes. Export a backup.'}
+                ? t('settings.storageLocal')
+                : t('settings.storageMemory')}
             </p>
             <dl className="stat-list">
-              <div><dt>Resources</dt><dd>{library.resources.length}</dd></div>
-              <div><dt>Categories</dt><dd>{library.categories.length}</dd></div>
-              <div><dt>Your data (approx.)</dt><dd>{formatBytes(dataBytes)}</dd></div>
+              <div><dt>{t('settings.statResources')}</dt><dd>{library.resources.length}</dd></div>
+              <div><dt>{t('settings.statCategories')}</dt><dd>{library.categories.length}</dd></div>
+              <div><dt>{t('settings.statData')}</dt><dd>{formatBytes(dataBytes)}</dd></div>
               <div>
-                <dt>Browser storage in use (approx.)</dt>
-                <dd>{storageInfo?.usage != null ? formatBytes(storageInfo.usage) : 'Not reported'}</dd>
+                <dt>{t('settings.statBrowser')}</dt>
+                <dd>{storageInfo?.usage != null ? formatBytes(storageInfo.usage) : t('common.notReported')}</dd>
               </div>
               <div>
-                <dt>Protected from automatic cleanup</dt>
-                <dd>{storageInfo?.persisted == null ? 'Unknown' : storageInfo.persisted ? 'Yes' : 'Not guaranteed'}</dd>
+                <dt>{t('settings.statPersisted')}</dt>
+                <dd>{storageInfo?.persisted == null ? t('common.unknown') : storageInfo.persisted ? t('common.yes') : t('settings.notGuaranteed')}</dd>
               </div>
             </dl>
             <p className="setting-row__hint">
-              Browser-reported numbers are rough estimates and include other data from this site.
+              {t('settings.estimates')}
             </p>
             {storageInfo?.persisted === false ? (
               <button type="button" className="button button--soft" onClick={persist}>
-                Ask the browser to keep my data
+                {t('settings.persist')}
               </button>
             ) : null}
           </section>
 
           <section className="settings__section settings__section--danger" aria-labelledby="set-reset">
             <h3 id="set-reset" className="settings__heading">
-              <LuRotateCcw className="icon" size={17} aria-hidden="true" /> Reset
+              <LuRotateCcw className="icon" size={17} aria-hidden="true" /> {t('settings.reset')}
             </h3>
             <p className="setting-row__hint">
-              This will remove all {APP_NAME} data stored in this browser: resources, categories and preferences.
+              {t('settings.resetBody', { name: APP_NAME })}
             </p>
             <button type="button" className="button button--danger" onClick={() => setConfirmReset(true)}>
-              Reset all local data…
+              {t('settings.resetButton')}
             </button>
           </section>
 
           <section className="settings__section" aria-labelledby="set-about">
             <h3 id="set-about" className="settings__heading">
-              <LuInfo className="icon" size={17} aria-hidden="true" /> About {APP_NAME}
+              <LuInfo className="icon" size={17} aria-hidden="true" /> {t('settings.about', { name: APP_NAME })}
             </h3>
             <p className="setting-row__hint">
-              <strong>{APP_NAME}</strong> {APP_VERSION}. {APP_TAGLINE} {APP_DESCRIPTION} Platform names such as YouTube
-              are only labels on links you save; {APP_NAME} is not affiliated with them.
+              {t('settings.aboutBody', {
+                name: APP_NAME,
+                version: APP_VERSION,
+                tagline: t('app.tagline'),
+                description: t('app.description'),
+              })}
             </p>
           </section>
         </div>
@@ -357,33 +403,32 @@ export function SettingsDialog() {
 
       {confirmReplace ? (
         <ConfirmDialog
-          title="Replace all current data?"
-          confirmLabel="Replace everything"
+          title={t('settings.replaceTitle')}
+          confirmLabel={t('settings.replaceConfirm')}
           danger
           onCancel={() => setConfirmReplace(false)}
           onConfirm={runImport}
         >
           <p>
-            Your {pluralize(library.resources.length, 'current resource')} and {pluralize(library.categories.length, 'category', 'categories')} will be
-            deleted and replaced by the contents of <strong>{fileName}</strong>. Export a backup first if you might need
-            them.
+            {t('settings.replaceWarn', {
+              resources: plural('count.currentResource', library.resources.length),
+              categories: plural('count.category', library.categories.length),
+              file: `“${fileName}”`,
+            })}
           </p>
         </ConfirmDialog>
       ) : null}
 
       {confirmReset ? (
         <ConfirmDialog
-          title="Reset all local data?"
-          confirmLabel="Delete everything"
+          title={t('settings.resetTitle')}
+          confirmLabel={t('settings.resetConfirm')}
           danger
-          requireText="RESET"
+          requireText={t('settings.resetWord')}
           onCancel={() => setConfirmReset(false)}
           onConfirm={doReset}
         >
-          <p>
-            This will remove all {APP_NAME} data stored in this browser. Your resources and categories will be deleted
-            permanently and the starter categories will be restored. This cannot be undone.
-          </p>
+          <p>{t('settings.resetWarn', { name: APP_NAME })}</p>
         </ConfirmDialog>
       ) : null}
     </>

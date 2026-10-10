@@ -1,3 +1,4 @@
+import { translate } from '../../i18n/core';
 import type { DatabaseSchema, StoreName } from '../../types';
 
 export type StorageErrorCode = 'unavailable' | 'quota' | 'blocked' | 'failed';
@@ -17,16 +18,16 @@ export function describeStorageError(error: unknown): string {
   if (error instanceof StorageError) {
     switch (error.code) {
       case 'quota':
-        return 'Your browser has no storage space left for LinkNest. Export a backup and free some space.';
+        return translate('storage.quota');
       case 'blocked':
-        return 'Storage is blocked by another open LinkNest tab. Close other tabs and reload.';
+        return translate('storage.blocked');
       case 'unavailable':
-        return 'Local storage is not available in this browser session (private mode or blocked by settings).';
+        return translate('storage.unavailable');
       default:
-        return 'LinkNest could not save your data. Please try again.';
+        return translate('storage.failed');
     }
   }
-  return 'Something went wrong while saving. Please try again.';
+  return translate('storage.generic');
 }
 
 export type WriteOp =

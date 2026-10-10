@@ -1,5 +1,7 @@
 import { LuArrowUpDown, LuStar, LuX } from 'react-icons/lu';
-import { PLATFORM_META, RESOURCE_TYPE_META } from '../../config/app';
+import { RESOURCE_TYPE_META } from '../../config/app';
+import { useI18n } from '../../i18n';
+import { platformLabel, typeLabel } from '../../lib/labels';
 import { useAppUi } from '../../hooks/useAppUi';
 import { useLibrary } from '../../hooks/useLibrary';
 import {
@@ -13,20 +15,8 @@ import {
 import { CategorySelect } from '../ui/forms';
 import { Icon } from '../ui/icons';
 
-const SORT_LABEL: Record<SortKey, string> = {
-  newest: 'Newest first',
-  oldest: 'Oldest first',
-  'title-asc': 'Title A–Z',
-  'title-desc': 'Title Z–A',
-  updated: 'Recently updated',
-  favorites: 'Favorites first',
-};
-const DATE_LABEL: Record<DatePreset, string> = {
-  any: 'Any time',
-  '7d': 'Last 7 days',
-  '30d': 'Last 30 days',
-  year: 'This year',
-};
+const SORT_KEYS: SortKey[] = ['newest', 'oldest', 'title-asc', 'title-desc', 'updated', 'favorites'];
+const DATE_KEYS: DatePreset[] = ['any', '7d', '30d', 'year'];
 
 interface Props {
   /** True when the route already fixes the category (category pages). */
@@ -38,6 +28,7 @@ interface Props {
 export function FilterBar({ categoryLocked, favoritesLocked }: Props) {
   const { filters, setFilters, clearFilters, sort, setSort } = useAppUi();
   const { tags, categories } = useLibrary();
+  const { t } = useI18n();
 
   const toggleType = (type: ResourceType) =>
     setFilters({
@@ -54,8 +45,8 @@ export function FilterBar({ categoryLocked, favoritesLocked }: Props) {
     filters.query.trim() !== '';
 
   return (
-    <div className="filters glass" role="group" aria-label="Filter and sort">
-      <div className="filters__types" role="group" aria-label="Type">
+    <div className="filters glass" role="group" aria-label={t('filters.group')}>
+      <div className="filters__types" role="group" aria-label={t('filters.type')}>
         {RESOURCE_TYPES.map((type) => {
           const selected = filters.types.includes(type);
           return (
@@ -67,7 +58,7 @@ export function FilterBar({ categoryLocked, favoritesLocked }: Props) {
               onClick={() => toggleType(type)}
             >
               <Icon name={RESOURCE_TYPE_META[type].icon} size={14} />
-              {RESOURCE_TYPE_META[type].label}
+              {typeLabel(type)}
             </button>
           );
         })}
@@ -76,20 +67,20 @@ export function FilterBar({ categoryLocked, favoritesLocked }: Props) {
       <div className="filters__controls">
         {!categoryLocked ? (
           <label className="inline-field">
-            <span className="inline-field__label">Category</span>
+            <span className="inline-field__label">{t('filters.category')}</span>
             <CategorySelect
               id="filter-category"
               compact
               categories={categories}
               value={filters.categoryId}
-              emptyLabel="Any category"
+              emptyLabel={t('filters.anyCategory')}
               onChange={(value) => setFilters({ categoryId: value })}
             />
           </label>
         ) : null}
 
         <label className="inline-field">
-          <span className="inline-field__label">Platform</span>
+          <span className="inline-field__label">{t('filters.platform')}</span>
           <select
             className="input select input--sm"
             value={filters.platforms[0] ?? ''}
@@ -97,17 +88,17 @@ export function FilterBar({ categoryLocked, favoritesLocked }: Props) {
               setFilters({ platforms: event.target.value ? [event.target.value as Platform] : [] })
             }
           >
-            <option value="">Any platform</option>
+            <option value="">{t('filters.anyPlatform')}</option>
             {PLATFORMS.map((platform) => (
               <option key={platform} value={platform}>
-                {PLATFORM_META[platform].label}
+                {platformLabel(platform)}
               </option>
             ))}
           </select>
         </label>
 
         <label className="inline-field">
-          <span className="inline-field__label">Tag</span>
+          <span className="inline-field__label">{t('filters.tag')}</span>
           <select
             className="input select input--sm"
             value=""
@@ -117,7 +108,7 @@ export function FilterBar({ categoryLocked, favoritesLocked }: Props) {
               if (tag && !filters.tags.includes(tag)) setFilters({ tags: [...filters.tags, tag] });
             }}
           >
-            <option value="">{tags.length === 0 ? 'No tags yet' : 'Add tag filter…'}</option>
+            <option value="">{tags.length === 0 ? t('filters.noTags') : t('filters.addTag')}</option>
             {tags
               .filter((entry) => !filters.tags.includes(entry.tag))
               .map((entry) => (
@@ -129,15 +120,15 @@ export function FilterBar({ categoryLocked, favoritesLocked }: Props) {
         </label>
 
         <label className="inline-field">
-          <span className="inline-field__label">Date saved</span>
+          <span className="inline-field__label">{t('filters.date')}</span>
           <select
             className="input select input--sm"
             value={filters.date}
             onChange={(event) => setFilters({ date: event.target.value as DatePreset })}
           >
-            {(Object.keys(DATE_LABEL) as DatePreset[]).map((key) => (
+            {DATE_KEYS.map((key) => (
               <option key={key} value={key}>
-                {DATE_LABEL[key]}
+                {t(`date.${key}`)}
               </option>
             ))}
           </select>
@@ -151,18 +142,18 @@ export function FilterBar({ categoryLocked, favoritesLocked }: Props) {
             onClick={() => setFilters({ favoritesOnly: !filters.favoritesOnly })}
           >
             <LuStar className="icon" size={14} aria-hidden="true" />
-            Favorites only
+            {t('filters.favoritesOnly')}
           </button>
         ) : null}
 
         <label className="inline-field inline-field--end">
           <span className="inline-field__label">
-            <LuArrowUpDown className="icon" size={13} aria-hidden="true" /> Sort
+            <LuArrowUpDown className="icon" size={13} aria-hidden="true" /> {t('filters.sort')}
           </span>
           <select className="input select input--sm" value={sort} onChange={(event) => setSort(event.target.value as SortKey)}>
-            {(Object.keys(SORT_LABEL) as SortKey[]).map((key) => (
+            {SORT_KEYS.map((key) => (
               <option key={key} value={key}>
-                {SORT_LABEL[key]}
+                {t(`sort.${key}`)}
               </option>
             ))}
           </select>
@@ -170,14 +161,14 @@ export function FilterBar({ categoryLocked, favoritesLocked }: Props) {
       </div>
 
       {filters.tags.length > 0 ? (
-        <ul className="chips" aria-label="Active tag filters">
+        <ul className="chips" aria-label={t('filters.activeTags')}>
           {filters.tags.map((tag) => (
             <li key={tag} className="chip chip--removable">
               #{tag}
               <button
                 type="button"
                 className="chip__remove"
-                aria-label={`Remove tag filter ${tag}`}
+                aria-label={t('filters.removeTag', { tag })}
                 onClick={() => setFilters({ tags: filters.tags.filter((t) => t !== tag) })}
               >
                 <LuX className="icon" size={12} aria-hidden="true" />
@@ -189,7 +180,7 @@ export function FilterBar({ categoryLocked, favoritesLocked }: Props) {
 
       {active ? (
         <button type="button" className="link-button filters__clear" onClick={clearFilters}>
-          <LuX className="icon" size={14} aria-hidden="true" /> Clear filters
+          <LuX className="icon" size={14} aria-hidden="true" /> {t('filters.clear')}
         </button>
       ) : null}
     </div>

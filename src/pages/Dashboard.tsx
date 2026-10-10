@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { LuChevronRight, LuInbox, LuPlus } from 'react-icons/lu';
-import { APP_NAME, APP_TAGLINE, RECENT_COUNT, RESOURCE_TYPE_META } from '../config/app';
+import { APP_NAME, RECENT_COUNT, RESOURCE_TYPE_META } from '../config/app';
+import { useI18n } from '../i18n';
+import { typeLabel } from '../lib/labels';
 import { useAppUi } from '../hooks/useAppUi';
 import { useLibrary } from '../hooks/useLibrary';
 import { buildTree, pathLabel } from '../lib/categories/tree';
-import { formatDate, pluralize } from '../lib/format';
+import { formatDate } from '../lib/format';
 import { RESOURCE_TYPES } from '../types';
 import { BranchMap } from '../components/categories/CategoryNodes';
 import { EmptyState } from '../components/ui/EmptyState';
@@ -15,6 +17,7 @@ import { Thumbnail } from '../components/ui/Thumbnail';
 export function Dashboard() {
   const { resources, categories, categoryById } = useLibrary();
   const { openModal, navigate } = useAppUi();
+  const { t, plural } = useI18n();
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -27,15 +30,23 @@ export function Dashboard() {
     () => [...resources].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, RECENT_COUNT),
     [resources],
   );
-  const count = (type: (typeof RESOURCE_TYPES)[number]) => resources.filter((r) => r.type === type).length;
-  const favorites = resources.filter((r) => r.favorite).length;
+  // One pass over the library for every count shown on the dashboard.
+  const totals = useMemo(() => {
+    const byType: Record<string, number> = {};
+    let favorites = 0;
+    for (const resource of resources) {
+      byType[resource.type] = (byType[resource.type] ?? 0) + 1;
+      if (resource.favorite) favorites += 1;
+    }
+    return { byType, favorites };
+  }, [resources]);
 
   const stats = [
-    { label: 'All resources', value: resources.length, go: () => navigate({ name: 'all' }) },
-    { label: 'Favorites', value: favorites, go: () => navigate({ name: 'favorites' }) },
-    { label: 'Programming', value: count('programming'), go: () => navigate({ name: 'all' }, { types: ['programming'] }) },
-    { label: 'Videos', value: count('video'), go: () => navigate({ name: 'all' }, { types: ['video'] }) },
-    { label: 'Prompts', value: count('prompt'), go: () => navigate({ name: 'all' }, { types: ['prompt'] }) },
+    { key: 'all', label: t('dash.statAll'), value: resources.length, go: () => navigate({ name: 'all' }) },
+    { key: 'fav', label: t('dash.statFavorites'), value: totals.favorites, go: () => navigate({ name: 'favorites' }) },
+    { key: 'prog', label: t('dash.statProgramming'), value: totals.byType.programming ?? 0, go: () => navigate({ name: 'all' }, { types: ['programming'] }) },
+    { key: 'video', label: t('dash.statVideos'), value: totals.byType.video ?? 0, go: () => navigate({ name: 'all' }, { types: ['video'] }) },
+    { key: 'prompt', label: t('dash.statPrompts'), value: totals.byType.prompt ?? 0, go: () => navigate({ name: 'all' }, { types: ['prompt'] }) },
   ];
 
   return (
@@ -44,27 +55,27 @@ export function Dashboard() {
         <h1 ref={headingRef} tabIndex={-1} className="hero__title">
           {APP_NAME}
         </h1>
-        <p className="hero__tagline">{APP_TAGLINE}</p>
+        <p className="hero__tagline">{t('app.tagline')}</p>
       </header>
 
       <section aria-labelledby="quick-add" className="section">
-        <h2 id="quick-add" className="section__title">Quick add</h2>
+        <h2 id="quick-add" className="section__title">{t('dash.quickAdd')}</h2>
         <div className="quick-add">
           {RESOURCE_TYPES.map((type) => (
             <button key={type} type="button" className="quick-add__item glass" onClick={() => openModal({ kind: 'add', type })}>
               <span className="quick-add__icon">
                 <Icon name={RESOURCE_TYPE_META[type].icon} size={18} />
               </span>
-              <span>{RESOURCE_TYPE_META[type].label}</span>
+              <span>{typeLabel(type)}</span>
               <LuPlus className="icon quick-add__plus" size={15} aria-hidden="true" />
             </button>
           ))}
         </div>
       </section>
 
-      <section aria-label="Overview" className="stats">
+      <section aria-label={t('dash.overview')} className="stats">
         {stats.map((stat) => (
-          <button key={stat.label} type="button" className="stat glass" onClick={stat.go}>
+          <button key={stat.key} type="button" className="stat glass" onClick={stat.go}>
             <span className="stat__value">{stat.value}</span>
             <span className="stat__label">{stat.label}</span>
           </button>
@@ -73,17 +84,17 @@ export function Dashboard() {
 
       <section aria-labelledby="recent" className="section">
         <div className="section__head">
-          <h2 id="recent" className="section__title">Recently added</h2>
+          <h2 id="recent" className="section__title">{t('dash.recent')}</h2>
           {resources.length > RECENT_COUNT ? (
             <button type="button" className="link-button" onClick={() => navigate({ name: 'all' })}>
-              View all <LuChevronRight className="icon" size={14} aria-hidden="true" />
+              {t('dash.viewAll')} <LuChevronRight className="icon icon--dir" size={14} aria-hidden="true" />
             </button>
           ) : null}
         </div>
         {recent.length === 0 ? (
-          <EmptyState icon={LuInbox} title="No resources yet" message="Start building your personal resource library.">
+          <EmptyState icon={LuInbox} title={t('empty.noneTitle')} message={t('empty.noneBody')}>
             <button type="button" className="button button--primary" onClick={() => openModal({ kind: 'add' })}>
-              <LuPlus className="icon" size={16} aria-hidden="true" /> Add your first resource
+              <LuPlus className="icon" size={16} aria-hidden="true" /> {t('empty.addFirst')}
             </button>
           </EmptyState>
         ) : (
@@ -110,13 +121,13 @@ export function Dashboard() {
 
       <section aria-labelledby="map" className="section">
         <div className="section__head">
-          <h2 id="map" className="section__title">Your map</h2>
+          <h2 id="map" className="section__title">{t('dash.map')}</h2>
           <button type="button" className="link-button" onClick={() => openModal({ kind: 'category', mode: 'create', parentId: null })}>
-            <LuPlus className="icon" size={14} aria-hidden="true" /> New category
+            <LuPlus className="icon" size={14} aria-hidden="true" /> {t('dash.newCategory')}
           </button>
         </div>
         {tree.length === 0 ? (
-          <p className="muted">No categories yet. Create one to start organizing your {pluralize(resources.length, 'resource')}.</p>
+          <p className="muted">{t('dash.noCategories', { resources: plural('count.resource', resources.length) })}</p>
         ) : (
           <div className="map-grid">
             {tree.map((root) => (

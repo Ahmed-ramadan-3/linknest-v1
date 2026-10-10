@@ -23,23 +23,30 @@ export type ModalState =
   | { kind: 'deleteCategory'; id: string }
   | { kind: 'settings' };
 
-interface AppUiValue {
-  route: Route;
+/** Functions that change UI state. Their identity never changes, so buttons that only call them do not re-render. */
+interface AppUiActions {
   navigate(route: Route, preset?: Partial<LibraryFilters>): void;
-  filters: LibraryFilters;
   setFilters(patch: Partial<LibraryFilters>): void;
   clearFilters(): void;
-  sort: SortKey;
   setSort(sort: SortKey): void;
-  modal: ModalState;
   openModal(modal: ModalState): void;
   closeModal(): void;
-  drawerOpen: boolean;
   setDrawerOpen(open: boolean): void;
   searchInputRef: RefObject<HTMLInputElement | null>;
 }
 
-const AppUiContext = createContext<AppUiValue | null>(null);
+interface AppUiState {
+  route: Route;
+  filters: LibraryFilters;
+  sort: SortKey;
+  modal: ModalState;
+  drawerOpen: boolean;
+}
+
+type AppUiValue = AppUiState & AppUiActions;
+
+const AppUiStateContext = createContext<AppUiState | null>(null);
+const AppUiActionsContext = createContext<AppUiActions | null>(null);
 
 /** UI state shared across the shell: route, filters, sort, the open modal and the mobile drawer. */
 export function AppUiProvider({ children }: { children: ReactNode }) {
@@ -72,30 +79,32 @@ export function AppUiProvider({ children }: { children: ReactNode }) {
   }, []);
   const closeModal = useCallback(() => setModal({ kind: 'none' }), []);
 
-  const value = useMemo<AppUiValue>(
-    () => ({
-      route,
-      navigate,
-      filters,
-      setFilters,
-      clearFilters,
-      sort,
-      setSort,
-      modal,
-      openModal,
-      closeModal,
-      drawerOpen,
-      setDrawerOpen,
-      searchInputRef,
-    }),
-    [route, navigate, filters, setFilters, clearFilters, sort, modal, openModal, closeModal, drawerOpen],
+  const actions = useMemo<AppUiActions>(
+    () => ({ navigate, setFilters, clearFilters, setSort, openModal, closeModal, setDrawerOpen, searchInputRef }),
+    [navigate, setFilters, clearFilters, openModal, closeModal],
+  );
+  const state = useMemo<AppUiState>(
+    () => ({ route, filters, sort, modal, drawerOpen }),
+    [route, filters, sort, modal, drawerOpen],
   );
 
-  return <AppUiContext.Provider value={value}>{children}</AppUiContext.Provider>;
+  return (
+    <AppUiActionsContext.Provider value={actions}>
+      <AppUiStateContext.Provider value={state}>{children}</AppUiStateContext.Provider>
+    </AppUiActionsContext.Provider>
+  );
 }
 
+/** State and actions together. Prefer useAppUiActions() when only actions are needed. */
 export function useAppUi(): AppUiValue {
-  const context = useContext(AppUiContext);
-  if (!context) throw new Error('useAppUi must be used inside AppUiProvider');
-  return context;
+  const state = useContext(AppUiStateContext);
+  const actions = useContext(AppUiActionsContext);
+  if (!state || !actions) throw new Error('useAppUi must be used inside AppUiProvider');
+  return useMemo(() => ({ ...state, ...actions }), [state, actions]);
+}
+
+export function useAppUiActions(): AppUiActions {
+  const actions = useContext(AppUiActionsContext);
+  if (!actions) throw new Error('useAppUiActions must be used inside AppUiProvider');
+  return actions;
 }

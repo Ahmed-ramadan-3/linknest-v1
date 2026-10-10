@@ -1,6 +1,8 @@
 import { useMemo, useRef, useState, type FormEvent } from 'react';
 import { LuArrowLeft } from 'react-icons/lu';
-import { PLATFORM_META, RESOURCE_TYPE_META } from '../../config/app';
+import { RESOURCE_TYPE_META } from '../../config/app';
+import { useI18n } from '../../i18n';
+import { platformLabel, typeDescription, typeLabel } from '../../lib/labels';
 import { describeStorageError } from '../../data/db';
 import { useAppUi } from '../../hooks/useAppUi';
 import { useLibrary } from '../../hooks/useLibrary';
@@ -81,6 +83,7 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
   const { categories, resources, tags, addResource, updateResource } = useLibrary();
   const { closeModal, openModal } = useAppUi();
   const toast = useToast();
+  const { t } = useI18n();
 
   const [step, setStep] = useState<'type' | 'form'>(mode === 'edit' || initialType ? 'form' : 'type');
   const [draft, setDraft] = useState<ResourceDraft>(() => {
@@ -137,14 +140,14 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
     const image = checkUrl(draft.thumbnailUrl);
     return {
       id: 'preview',
-      title: draft.title || 'Untitled',
+      title: draft.title || t('form.untitled'),
       type: draft.type,
       platform: draft.platform,
       icon: isIconKey(draft.icon) ? draft.icon : null,
       url: url.ok ? url.url : '',
       thumbnailUrl: image.ok ? image.url : null,
     };
-  }, [draft.title, draft.type, draft.platform, draft.icon, draft.url, draft.thumbnailUrl]);
+  }, [draft.title, draft.type, draft.platform, draft.icon, draft.url, draft.thumbnailUrl, t]);
 
   const save = async (allowDuplicate: boolean) => {
     const result = validateDraft(draft);
@@ -172,10 +175,10 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
     try {
       if (mode === 'edit' && resource) {
         await updateResource(resource.id, { ...result.value, favorite: draft.favorite });
-        toast.success('Changes saved');
+        toast.success(t('form.savedEdit'));
       } else {
         await addResource(result.value);
-        toast.success('Resource saved');
+        toast.success(t('form.savedNew'));
       }
       closeModal();
     } catch (error) {
@@ -191,7 +194,7 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
 
   if (step === 'type') {
     return (
-      <Dialog title="What do you want to save?" size="md" onClose={closeModal}>
+      <Dialog title={t('form.chooseType')} size="md" onClose={closeModal}>
         <div className="type-grid">
           {RESOURCE_TYPES.map((type) => {
             const typeMeta = RESOURCE_TYPE_META[type];
@@ -200,8 +203,8 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
                 <span className="type-tile__icon">
                   <Icon name={typeMeta.icon} size={22} />
                 </span>
-                <span className="type-tile__label">{typeMeta.label}</span>
-                <span className="type-tile__desc">{typeMeta.description}</span>
+                <span className="type-tile__label">{typeLabel(type)}</span>
+                <span className="type-tile__desc">{typeDescription(type)}</span>
               </button>
             );
           })}
@@ -210,12 +213,12 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
     );
   }
 
-  const urlLabel = meta.requiresUrl ? 'URL' : 'Source link (optional)';
+  const urlLabel = meta.requiresUrl ? t('form.url') : t('form.urlOptional');
 
   return (
     <>
       <Dialog
-        title={mode === 'edit' ? 'Edit resource' : `Save ${meta.label.toLowerCase()}`}
+        title={mode === 'edit' ? t('form.editTitle') : t('form.saveType', { type: typeLabel(draft.type) })}
         size="lg"
         onClose={closeModal}
         dismissible={!busy}
@@ -232,10 +235,10 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
               onClick={() => (dirty ? setAskDiscard(true) : closeModal())}
               disabled={busy}
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button type="submit" form="resource-form" className="button button--primary" disabled={busy}>
-              {busy ? 'Saving…' : mode === 'edit' ? 'Save changes' : 'Save'}
+              {busy ? t('common.saving') : mode === 'edit' ? t('common.saveChanges') : t('common.save')}
             </button>
           </>
         }
@@ -248,15 +251,15 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
             <div className="form__lead-text">
               <span className="badge">
                 <Icon name={meta.icon} size={13} />
-                {meta.label}
+                {typeLabel(draft.type)}
               </span>
               {mode === 'create' ? (
                 <button type="button" className="link-button" onClick={() => setStep('type')}>
-                  <LuArrowLeft className="icon" size={14} aria-hidden="true" /> Change type
+                  <LuArrowLeft className="icon icon--dir" size={14} aria-hidden="true" /> {t('form.changeType')}
                 </button>
               ) : (
                 <label className="inline-field">
-                  <span className="visually-hidden">Type</span>
+                  <span className="visually-hidden">{t('form.type')}</span>
                   <select
                     className="input select input--sm"
                     value={draft.type}
@@ -264,7 +267,7 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
                   >
                     {RESOURCE_TYPES.map((type) => (
                       <option key={type} value={type}>
-                        {RESOURCE_TYPE_META[type].label}
+                        {typeLabel(type)}
                       </option>
                     ))}
                   </select>
@@ -273,7 +276,7 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
             </div>
           </div>
 
-          <Field label="Title" htmlFor="rf-title" required error={errors.title} hint="A name you will recognise later, e.g. “React Authentication Tutorial”.">
+          <Field label={t('form.title')} htmlFor="rf-title" required error={errors.title} hint={t('form.titleHint')}>
             <input
               id="rf-title"
               className="input"
@@ -286,7 +289,7 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
             />
           </Field>
 
-          <Field label={urlLabel} htmlFor="rf-url" required={meta.requiresUrl} error={errors.url} hint="Only http:// and https:// links are saved.">
+          <Field label={urlLabel} htmlFor="rf-url" required={meta.requiresUrl} error={errors.url} hint={t('form.urlHint')}>
             <input
               id="rf-url"
               className="input"
@@ -303,7 +306,7 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
           </Field>
 
           {draft.type === 'prompt' ? (
-            <Field label="Prompt" htmlFor="rf-prompt" required error={errors.promptContent} hint="Line breaks and spacing are kept exactly as you type them.">
+            <Field label={t('form.prompt')} htmlFor="rf-prompt" required error={errors.promptContent} hint={t('form.promptHint')}>
               <textarea
                 id="rf-prompt"
                 className="input textarea textarea--mono"
@@ -319,7 +322,7 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
           ) : null}
 
           <div className="form__row">
-            <Field label="Category" htmlFor="rf-category" required error={errors.categoryId}>
+            <Field label={t('form.category')} htmlFor="rf-category" required error={errors.categoryId}>
               <CategorySelect
                 id="rf-category"
                 categories={categories}
@@ -336,12 +339,12 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
                 className="link-button field__action"
                 onClick={() => setCreatingCategory(true)}
               >
-                + New category
+                {t('form.newCategoryLink')}
               </button>
             </Field>
 
             {meta.showsPlatform || draft.platform ? (
-              <Field label="Platform" htmlFor="rf-platform" hint="Detected from the link; change it if needed.">
+              <Field label={t('form.platform')} htmlFor="rf-platform" hint={t('form.platformHint')}>
                 <select
                   id="rf-platform"
                   className="input select"
@@ -351,10 +354,10 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
                     patch({ platform: (event.target.value || null) as Platform | null });
                   }}
                 >
-                  <option value="">None</option>
+                  <option value="">{t('platform.none')}</option>
                   {PLATFORMS.map((platform) => (
                     <option key={platform} value={platform}>
-                      {PLATFORM_META[platform].label}
+                      {platformLabel(platform)}
                     </option>
                   ))}
                 </select>
@@ -362,7 +365,7 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
             ) : null}
           </div>
 
-          <Field label="Description" htmlFor="rf-description" hint="Optional. What is this about?">
+          <Field label={t('form.description')} htmlFor="rf-description" hint={t('form.descriptionHint')}>
             <textarea
               id="rf-description"
               className="input textarea"
@@ -373,11 +376,11 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
             />
           </Field>
 
-          <Field label="Tags" htmlFor="rf-tags">
+          <Field label={t('form.tags')} htmlFor="rf-tags">
             <TagInput id="rf-tags" tags={draft.tags} suggestions={tagSuggestions} onChange={(next) => patch({ tags: next })} />
           </Field>
 
-          <Field label="Notes" htmlFor="rf-notes" hint="Optional. Why did you save this?">
+          <Field label={t('form.notes')} htmlFor="rf-notes" hint={t('form.notesHint')}>
             <textarea
               id="rf-notes"
               className="input textarea"
@@ -389,13 +392,13 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
           </Field>
 
           <details className="more" open={Boolean(errors.thumbnailUrl || errors.createdAt)}>
-            <summary>More details</summary>
+            <summary>{t('form.more')}</summary>
             <div className="more__body">
               <Field
-                label="Thumbnail image URL"
+                label={t('form.thumb')}
                 htmlFor="rf-thumb"
                 error={errors.thumbnailUrl}
-                hint="Optional. YouTube thumbnails are found automatically; other sites need an image link."
+                hint={t('form.thumbHint')}
               >
                 <input
                   id="rf-thumb"
@@ -410,7 +413,7 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
               </Field>
 
               <div className="form__row">
-                <Field label="Project" htmlFor="rf-project" hint="Optional label to group related items.">
+                <Field label={t('form.project')} htmlFor="rf-project" hint={t('form.projectHint')}>
                   <input
                     id="rf-project"
                     className="input"
@@ -425,7 +428,7 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
                     ))}
                   </datalist>
                 </Field>
-                <Field label="Date saved" htmlFor="rf-date" error={errors.createdAt}>
+                <Field label={t('form.date')} htmlFor="rf-date" error={errors.createdAt}>
                   <input
                     id="rf-date"
                     className="input"
@@ -438,9 +441,9 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
               </div>
 
               <div className="field">
-                <span className="field__label" id="rf-icon-label">Custom icon</span>
+                <span className="field__label" id="rf-icon-label">{t('form.icon')}</span>
                 <IconPicker
-                  label="Custom icon"
+                  label={t('form.icon')}
                   allowAuto
                   value={isIconKey(draft.icon) ? draft.icon : null}
                   onChange={(value) => patch({ icon: value })}
@@ -451,21 +454,21 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
 
           <label className="check">
             <input type="checkbox" checked={draft.favorite} onChange={(event) => patch({ favorite: event.target.checked })} />
-            <span>Mark as favorite</span>
+            <span>{t('form.favorite')}</span>
           </label>
         </form>
       </Dialog>
 
       {askDiscard ? (
         <ConfirmDialog
-          title="Discard this draft?"
-          confirmLabel="Discard"
-          cancelLabel="Keep editing"
+          title={t('form.discardTitle')}
+          confirmLabel={t('form.discard')}
+          cancelLabel={t('form.keepEditing')}
           danger
           onCancel={() => setAskDiscard(false)}
           onConfirm={closeModal}
         >
-          <p>Your changes have not been saved.</p>
+          <p>{t('form.discardBody')}</p>
         </ConfirmDialog>
       ) : null}
 
@@ -487,7 +490,7 @@ export function ResourceFormDialog({ mode, resource, initialType, initialCategor
       {duplicateOf ? (
         <DuplicateDialog
           existing={duplicateOf}
-          confirmLabel={mode === 'edit' ? 'Save anyway' : 'Add anyway'}
+          confirmLabel={mode === 'edit' ? t('dup.saveAnyway') : t('dup.addAnyway')}
           onOpenExisting={() => openModal({ kind: 'detail', id: duplicateOf.id })}
           onAddAnyway={() => {
             setDuplicateOf(null);

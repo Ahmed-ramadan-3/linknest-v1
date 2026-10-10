@@ -1,0 +1,237 @@
+/* Language direction, library toggle, auto-hiding search, and performance tuning.
+   Loaded last so it can refine the earlier layers without rewriting them. */
+
+/* ---------- Direction (Arabic / RTL) ---------- */
+[dir='rtl'] .icon--dir {
+  transform: scaleX(-1);
+}
+
+/* Arabic reads better with a little more line height and no letter spacing. */
+html[lang='ar'] body {
+  line-height: 1.7;
+  letter-spacing: 0;
+}
+
+html[lang='ar'] .brand-name,
+html[lang='ar'] .hero__title,
+html[lang='ar'] .dialog__title,
+html[lang='ar'] .header__brand,
+html[lang='ar'] .splash__name {
+  letter-spacing: 0;
+}
+
+html[lang='ar'] .sidebar__heading,
+html[lang='ar'] .detail__section h3,
+html[lang='ar'] .detail__section-head h3 {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Typed URLs, code and prompts stay left-to-right inside Arabic pages. */
+[dir='rtl'] input[type='url'],
+[dir='rtl'] .detail__url a,
+[dir='rtl'] .card__source {
+  direction: ltr;
+  text-align: start;
+}
+
+[dir='rtl'] .detail__url a,
+[dir='rtl'] .card__source {
+  unicode-bidi: plaintext;
+}
+
+/* ---------- Header: language button ---------- */
+.header__lang {
+  gap: 6px;
+  padding-inline: 10px;
+  min-height: 38px;
+  font-weight: 600;
+}
+
+.header__lang-full {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .header__lang-full {
+    display: inline;
+  }
+
+  .header__lang-short {
+    display: none;
+  }
+}
+
+/* ---------- Library sidebar: hide / show on desktop ---------- */
+@media (min-width: 1024px) {
+  .header .header__menu {
+    display: inline-grid;
+  }
+
+  html[data-sidebar='hidden'] .header .header__brand {
+    display: inline-flex;
+  }
+
+  .shell {
+    transition: grid-template-columns 0.3s var(--ease), column-gap 0.3s var(--ease);
+  }
+
+  .shell[data-sidebar='hidden'] {
+    grid-template-columns: 0 minmax(0, 1fr);
+    column-gap: 0;
+  }
+
+  .shell__sidebar {
+    transition: opacity 0.2s var(--ease), visibility 0s linear 0s;
+  }
+
+  .shell[data-sidebar='hidden'] .shell__sidebar {
+    visibility: hidden;
+    opacity: 0;
+    border-width: 0;
+    box-shadow: none;
+    pointer-events: none;
+    transition: opacity 0.15s var(--ease), visibility 0s linear 0.3s;
+  }
+
+  /* With the sidebar away the content can use the extra room. */
+  html[data-sidebar='hidden'] .main {
+    max-width: 1320px;
+  }
+}
+
+/* ---------- Search bar that steps aside while reading ---------- */
+.searchbar {
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-1), inset 0 1px 0 var(--highlight);
+}
+
+.header__search {
+  transition: transform 0.28s var(--ease), opacity 0.2s var(--ease), visibility 0s linear 0s;
+}
+
+.header__search.is-hidden {
+  opacity: 0;
+  transform: translateY(-16px);
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform 0.28s var(--ease), opacity 0.2s var(--ease), visibility 0s linear 0.28s;
+}
+
+/* On phones the search floats just under the header so hiding it never moves the page. */
+@media (max-width: 639px) {
+  .header {
+    margin-block-end: 60px;
+  }
+
+  .header__search {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-start: calc(100% + 8px);
+    order: 0;
+  }
+}
+
+/* ---------- Performance ---------- */
+/* Repeated surfaces skip the expensive backdrop blur; only the chrome (header, sidebar, dialogs) keeps it. */
+.card.glass,
+.stat.glass,
+.recent.glass,
+.branch.glass,
+.filters.glass,
+.empty.glass,
+.type-tile.glass,
+.quick-add__item.glass,
+.import-preview.glass {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--surface-card);
+}
+
+/* Off-screen cards are not laid out or painted until they scroll near the viewport. */
+.card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 340px;
+}
+
+/* Lite mode: no blur, a still background, lighter shadows. Chosen automatically on weaker devices. */
+html[data-perf='lite'] .glass,
+html[data-perf='lite'] .glass-strong {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  background: var(--surface-solid);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+html[data-perf='lite'] .dialog::backdrop,
+html[data-perf='lite'] .drawer__backdrop {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html[data-perf='lite'] .ambient__shape {
+  animation: none;
+  will-change: auto;
+}
+
+html[data-perf='lite'] .ambient__grain {
+  display: none;
+}
+
+html[data-perf='lite'] .card {
+  animation: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+  transition: none;
+}
+
+html[data-perf='lite'] .shell,
+html[data-perf='lite'] .shell__sidebar,
+html[data-perf='lite'] .header__search {
+  transition-duration: 0.01ms;
+}
+
+html[data-perf='lite'] .dialog__panel,
+html[data-perf='lite'] .dialog.is-closing .dialog__panel {
+  animation-duration: 0.12s;
+}
+
+html[data-perf='lite'] .splash__mark,
+html[data-perf='lite'] .splash__content {
+  filter: none;
+}
+
+/* Phones: keep the header on a single row now that the search floats below it. */
+@media (max-width: 639px) {
+  .header__row {
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .header__brand {
+    flex: 1 1 auto;
+    min-width: 0;
+    justify-content: flex-start;
+  }
+
+  .header__brand span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .header__actions {
+    flex: none;
+    margin-inline-start: 0;
+    gap: 2px;
+  }
+
+  .header__lang .icon {
+    display: none;
+  }
+
+  .header__lang {
+    padding-inline: 8px;
+    min-height: 36px;
+  }
+}

@@ -1,4 +1,5 @@
 import { MAX_CATEGORY_DEPTH } from '../../config/app';
+import { translate } from '../../i18n/core';
 import type { Category, Resource } from '../../types';
 
 export interface CategoryNode {
@@ -77,7 +78,7 @@ export function pathTo(byId: Map<string, Category>, id: string | null): Category
 
 export function pathLabel(byId: Map<string, Category>, id: string | null, separator = ' › '): string {
   const path = pathTo(byId, id);
-  return path.length > 0 ? path.map((c) => c.name).join(separator) : 'Uncategorized';
+  return path.length > 0 ? path.map((c) => c.name).join(separator) : translate('detail.uncategorized');
 }
 
 export function depthOf(byId: Map<string, Category>, id: string | null): number {
@@ -105,15 +106,15 @@ export function canReparent(
   newParentId: string | null,
 ): ReparentCheck {
   if (newParentId === null) return { ok: true };
-  if (newParentId === id) return { ok: false, reason: 'A category cannot be its own parent.' };
+  if (newParentId === id) return { ok: false, reason: translate('err.reparent.self') };
   if (descendantIds(categories, id).has(newParentId)) {
-    return { ok: false, reason: 'A category cannot be moved inside one of its own subcategories.' };
+    return { ok: false, reason: translate('err.reparent.inside') };
   }
   const byId = indexById(categories);
-  if (!byId.has(newParentId)) return { ok: false, reason: 'The chosen parent no longer exists.' };
+  if (!byId.has(newParentId)) return { ok: false, reason: translate('err.reparent.missing') };
   const newDepth = depthOf(byId, newParentId) + 1;
   if (newDepth + subtreeHeight(categories, id) >= MAX_CATEGORY_DEPTH) {
-    return { ok: false, reason: `Categories can be nested up to ${MAX_CATEGORY_DEPTH} levels deep.` };
+    return { ok: false, reason: translate('err.reparent.depth', { max: MAX_CATEGORY_DEPTH }) };
   }
   return { ok: true };
 }

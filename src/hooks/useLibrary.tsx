@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from 'react';
 import { SYNC_CHANNEL } from '../config/app';
+import { categoryDisplayName, useI18n } from '../i18n';
 import { createStorage, describeStorageError } from '../data/db';
 import {
   createRepositories,
@@ -37,17 +38,8 @@ export interface CategoryInput {
 
 type Status = 'loading' | 'ready' | 'error';
 
-interface LibraryContextValue {
-  status: Status;
-  /** Friendly message when status is "error" or the in-memory fallback is active. */
-  notice: string | null;
-  persistent: boolean;
-  categories: Category[];
-  resources: Resource[];
-  categoryById: Map<string, Category>;
-  counts: CategoryCounts;
-  searchIndex: SearchIndex;
-  tags: { tag: string; count: number }[];
+/** Everything that changes the library. These functions never change identity. */
+interface LibraryActions {
   retry(): void;
   addResource(values: ResourceValues): Promise<Resource>;
   updateResource(id: string, values: ResourceValues): Promise<Resource>;
@@ -60,11 +52,30 @@ interface LibraryContextValue {
   resetAll(): Promise<void>;
 }
 
+interface LibraryContextValue extends LibraryActions {
+  status: Status;
+  /** Friendly message when status is "error" or the in-memory fallback is active. */
+  notice: string | null;
+  persistent: boolean;
+  /** Categories with starter names shown in the current language. */
+  categories: Category[];
+  /** Categories exactly as stored (use for editing and exporting). */
+  rawCategories: Category[];
+  resources: Resource[];
+  favoritesCount: number;
+  categoryById: Map<string, Category>;
+  counts: CategoryCounts;
+  searchIndex: SearchIndex;
+  tags: { tag: string; count: number }[];
+}
+
 const LibraryContext = createContext<LibraryContextValue | null>(null);
+const LibraryActionsContext = createContext<LibraryActions | null>(null);
 
 const EMPTY: LibraryData = { categories: [], resources: [] };
 
 export function LibraryProvider({ children }: { children: ReactNode }) {
+  const { lang } = useI18n();
   const [status, setStatus] = useState<Status>('loading');
   const [notice, setNotice] = useState<string | null>(null);
   const [persistent, setPersistent] = useState(true);
@@ -260,25 +271,28 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
   const snapshot = useCallback(() => dataRef.current, []);
   const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
-  const categoryById = useMemo(() => indexById(data.categories), [data.categories]);
-  const counts = useMemo(() => countResources(data.categories, data.resources), [data.categories, data.resources]);
+  // Starter categories read in the current language; renamed ones keep the user's text.
+  const categories = useMemo(
+    () =>
+      data.categories.map((category) => {
+        const name = categoryDisplayName(category);
+        return name === category.name ? category : { ...category, name };
+      }),
+    // `lang` is a dependency because the display names depend on it.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [data.categories, lang],
+  );
+  const categoryById = useMemo(() => indexById(categories), [categories]);
+  const counts = useMemo(() => countResources(categories, data.resources), [categories, data.resources]);
   const searchIndex = useMemo(
-    () => buildSearchIndex(data.resources, data.categories),
-    [data.resources, data.categories],
+    () => buildSearchIndex(data.resources, categories),
+    [data.resources, categories],
   );
   const tags = useMemo(() => collectTags(data.resources), [data.resources]);
+  const favoritesCount = useMemo(() => data.resources.filter((r) => r.favorite).length, [data.resources]);
 
-  const value = useMemo<LibraryContextValue>(
+  const actions = useMemo<LibraryActions>(
     () => ({
-      status,
-      notice,
-      persistent,
-      categories: data.categories,
-      resources: data.resources,
-      categoryById,
-      counts,
-      searchIndex,
-      tags,
       retry,
       addResource,
       updateResource,
@@ -291,13 +305,41 @@ export function LibraryProvider({ children }: { children: ReactNode }) {
       resetAll,
     }),
     [
-      status, notice, persistent, data, categoryById, counts, searchIndex, tags, retry,
-      addResource, updateResource, toggleFavorite, deleteResource, saveCategory,
+      retry, addResource, updateResource, toggleFavorite, deleteResource, saveCategory,
       deleteCategory, importBackup, snapshot, resetAll,
     ],
   );
 
-  return <LibraryContext.Provider value={value}>{children}</LibraryContext.Provider>;
+  const value = useMemo<LibraryContextValue>(
+    () => ({
+      ...actions,
+      status,
+      notice,
+      persistent,
+      categories,
+      rawCategories: data.categories,
+      resources: data.resources,
+      favoritesCount,
+      categoryById,
+      counts,
+      searchIndex,
+      tags,
+    }),
+    [actions, status, notice, persistent, categories, data, favoritesCount, categoryById, counts, searchIndex, tags],
+  );
+
+  return (
+    <LibraryActionsContext.Provider value={actions}>
+      <LibraryContext.Provider value={value}>{children}</LibraryContext.Provider>
+    </LibraryActionsContext.Provider>
+  );
+}
+
+/** Stable library actions only. Components that just trigger changes should use this: they do not re-render when data changes. */
+export function useLibraryActions(): LibraryActions {
+  const context = useContext(LibraryActionsContext);
+  if (!context) throw new Error('useLibraryActions must be used inside LibraryProvider');
+  return context;
 }
 
 export function useLibrary(): LibraryContextValue {

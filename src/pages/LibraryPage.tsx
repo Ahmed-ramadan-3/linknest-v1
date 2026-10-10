@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useRef, useState } from 'react';
 import { LuPencil, LuPlus, LuSearchX, LuStar, LuTrash2, LuInbox, LuLayoutGrid } from 'react-icons/lu';
-import { RESOURCE_TYPE_META } from '../config/app';
 import { useAppUi } from '../hooks/useAppUi';
 import { useLibrary } from '../hooks/useLibrary';
-import { buildTree, pathTo, type CategoryNode } from '../lib/categories/tree';
-import { pluralize } from '../lib/format';
+import { buildTree, pathLabel, pathTo, type CategoryNode } from '../lib/categories/tree';
+import { useI18n } from '../i18n';
+import { typeLabel } from '../lib/labels';
 import { applyFilters, sortResources } from '../lib/search';
 import type { LibraryFilters } from '../types';
 import { Breadcrumbs } from '../components/navigation/Breadcrumbs';
@@ -28,6 +28,7 @@ function findNode(nodes: CategoryNode[], id: string): CategoryNode | null {
 /** All Resources, Favorites and category pages share one view. */
 export function LibraryPage({ scope }: { scope: 'all' | 'favorites' | { categoryId: string } }) {
   const library = useLibrary();
+  const { t, plural } = useI18n();
   const { filters, sort, openModal, navigate, clearFilters } = useAppUi();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const [visible, setVisible] = useState(PAGE_SIZE);
@@ -47,17 +48,19 @@ export function LibraryPage({ scope }: { scope: 'all' | 'favorites' | { category
     [filters, scope, categoryId],
   );
 
+  // Typing and filter changes stay responsive: the list catches up when the browser is idle.
+  const deferredFilters = useDeferredValue(effective);
   const results = useMemo(
     () =>
       sortResources(
-        applyFilters(effective, {
+        applyFilters(deferredFilters, {
           resources: library.resources,
           categories: library.categories,
           index: library.searchIndex,
         }),
         sort,
       ),
-    [effective, library.resources, library.categories, library.searchIndex, sort],
+    [deferredFilters, library.resources, library.categories, library.searchIndex, sort],
   );
 
   useEffect(() => {
@@ -71,16 +74,16 @@ export function LibraryPage({ scope }: { scope: 'all' | 'favorites' | { category
 
   if (categoryId && !category) {
     return (
-      <EmptyState icon={LuInbox} title="Category not found" message="This category may have been deleted or renamed in another tab.">
+      <EmptyState icon={LuInbox} title={t('page.notFoundTitle')} message={t('page.notFoundBody')}>
         <button type="button" className="button button--primary" onClick={() => navigate({ name: 'home' })}>
-          Back to Home
+          {t('common.backHome')}
         </button>
       </EmptyState>
     );
   }
 
   const path = category ? pathTo(library.categoryById, category.id) : [];
-  const title = category ? category.name : scope === 'favorites' ? 'Favorites' : 'All Resources';
+  const title = category ? category.name : scope === 'favorites' ? t('nav.favorites') : t('nav.all');
   const filtersApplied =
     searching ||
     filters.types.length > 0 ||
@@ -95,47 +98,47 @@ export function LibraryPage({ scope }: { scope: 'all' | 'favorites' | { category
   const emptyState = () => {
     if (library.resources.length === 0) {
       return (
-        <EmptyState icon={LuInbox} title="No resources yet" message="Start building your personal resource library.">
+        <EmptyState icon={LuInbox} title={t('empty.noneTitle')} message={t('empty.noneBody')}>
           <button type="button" className="button button--primary" onClick={() => openModal({ kind: 'add', categoryId })}>
-            <LuPlus className="icon" size={16} aria-hidden="true" /> Add your first resource
+            <LuPlus className="icon" size={16} aria-hidden="true" /> {t('empty.addFirst')}
           </button>
         </EmptyState>
       );
     }
     if (filtersApplied) {
       return (
-        <EmptyState icon={LuSearchX} title="No resources found" message="Nothing matches your search and filters. Try one of these:">
+        <EmptyState icon={LuSearchX} title={t('empty.foundTitle')} message={t('empty.foundBody')}>
           <button type="button" className="button button--soft" onClick={clearFilters}>
-            Clear search &amp; filters
+            {t('empty.clearAll')}
           </button>
           <button type="button" className="button button--primary" onClick={() => openModal({ kind: 'add', categoryId })}>
-            <LuPlus className="icon" size={16} aria-hidden="true" /> Add a new resource
+            <LuPlus className="icon" size={16} aria-hidden="true" /> {t('empty.addNew')}
           </button>
         </EmptyState>
       );
     }
     if (scope === 'favorites') {
       return (
-        <EmptyState icon={LuStar} title="No favorites yet" message="Tap the star on any resource to keep it close at hand.">
+        <EmptyState icon={LuStar} title={t('empty.favTitle')} message={t('empty.favBody')}>
           <button type="button" className="button button--soft" onClick={() => navigate({ name: 'all' })}>
-            Browse all resources
+            {t('empty.browseAll')}
           </button>
         </EmptyState>
       );
     }
     if (category) {
       return (
-        <EmptyState icon={LuInbox} title="This category is empty" message={`Nothing saved in ${category.name} yet.`}>
+        <EmptyState icon={LuInbox} title={t('empty.catTitle')} message={t('empty.catBody', { name: category.name })}>
           <button type="button" className="button button--primary" onClick={() => openModal({ kind: 'add', categoryId })}>
-            <LuPlus className="icon" size={16} aria-hidden="true" /> Add to {category.name}
+            <LuPlus className="icon" size={16} aria-hidden="true" /> {t('page.addTo', { name: category.name })}
           </button>
         </EmptyState>
       );
     }
     return (
-      <EmptyState icon={LuInbox} title="Nothing here yet" message="Add a resource to see it here.">
+      <EmptyState icon={LuInbox} title={t('empty.nothingTitle')} message={t('empty.nothingBody')}>
         <button type="button" className="button button--primary" onClick={() => openModal({ kind: 'add' })}>
-          Add resource
+          {t('empty.addResource')}
         </button>
       </EmptyState>
     );
@@ -147,20 +150,26 @@ export function LibraryPage({ scope }: { scope: 'all' | 'favorites' | { category
     results.length === 0 && singleType && !searching && library.resources.length > 0 ? (
       <EmptyState
         icon={LuInbox}
-        title={singleType === 'prompt' ? 'No prompts yet' : singleType === 'video' ? 'No videos yet' : `No ${RESOURCE_TYPE_META[singleType].label.toLowerCase()} items yet`}
+        title={
+          singleType === 'prompt'
+            ? t('empty.noPrompts')
+            : singleType === 'video'
+              ? t('empty.noVideos')
+              : t('empty.noType', { type: typeLabel(singleType) })
+        }
         message={
           singleType === 'prompt'
-            ? 'Save your best prompts here and copy them with one click.'
+            ? t('empty.noPromptsBody')
             : singleType === 'video'
-              ? 'Save YouTube, Facebook, Instagram or TikTok videos by link.'
-              : 'Nothing of this type has been saved yet.'
+              ? t('empty.noVideosBody')
+              : t('empty.noTypeBody')
         }
       >
         <button type="button" className="button button--primary" onClick={() => openModal({ kind: 'add', type: singleType, categoryId })}>
-          <LuPlus className="icon" size={16} aria-hidden="true" /> Add {RESOURCE_TYPE_META[singleType].label.toLowerCase()}
+          <LuPlus className="icon" size={16} aria-hidden="true" /> {t('empty.addType', { type: typeLabel(singleType) })}
         </button>
         <button type="button" className="button button--ghost" onClick={clearFilters}>
-          Clear filters
+          {t('filters.clear')}
         </button>
       </EmptyState>
     ) : null;
@@ -183,22 +192,22 @@ export function LibraryPage({ scope }: { scope: 'all' | 'favorites' | { category
           <div>
             <h1 ref={headingRef} tabIndex={-1}>{title}</h1>
             <p className="page__sub">
-              {pluralize(results.length, 'resource')}
-              {searching ? ` matching “${filters.query.trim()}” across everything` : ''}
+              {plural('count.resource', results.length)}
+              {searching ? t('page.matching', { query: filters.query.trim() }) : ''}
             </p>
           </div>
         </div>
         <div className="page__actions">
           <button type="button" className="button button--primary" onClick={() => openModal({ kind: 'add', categoryId })}>
-            <LuPlus className="icon" size={16} aria-hidden="true" /> Add{category ? ` to ${category.name}` : ''}
+            <LuPlus className="icon" size={16} aria-hidden="true" /> {category ? t('page.addTo', { name: category.name }) : t('common.add')}
           </button>
           {category ? (
             <>
               <button
                 type="button"
                 className="icon-button"
-                aria-label={`Edit ${category.name}`}
-                title="Edit category"
+                aria-label={t('page.editCategory', { name: category.name })}
+                title={t('page.editCategoryShort')}
                 onClick={() => openModal({ kind: 'category', mode: 'edit', id: category.id })}
               >
                 <LuPencil className="icon" size={17} aria-hidden="true" />
@@ -206,8 +215,8 @@ export function LibraryPage({ scope }: { scope: 'all' | 'favorites' | { category
               <button
                 type="button"
                 className="icon-button icon-button--danger"
-                aria-label={`Delete ${category.name}`}
-                title="Delete category"
+                aria-label={t('page.deleteCategory', { name: category.name })}
+                title={t('page.deleteCategoryShort')}
                 onClick={() => openModal({ kind: 'deleteCategory', id: category.id })}
               >
                 <LuTrash2 className="icon" size={17} aria-hidden="true" />
@@ -225,9 +234,9 @@ export function LibraryPage({ scope }: { scope: 'all' | 'favorites' | { category
       ) : null}
       {node && searching ? (
         <p className="notice">
-          Search looks through all of your resources.{' '}
+          {t('page.searchAll')}{' '}
           <button type="button" className="link-button" onClick={clearFilters}>
-            Back to {node.category.name}
+            {t('page.backTo', { name: node.category.name })}
           </button>
         </p>
       ) : null}
@@ -240,13 +249,17 @@ export function LibraryPage({ scope }: { scope: 'all' | 'favorites' | { category
         <>
           <div className="grid" aria-live="polite">
             {shown.map((resource) => (
-              <ResourceCard key={resource.id} resource={resource} />
+              <ResourceCard
+                key={resource.id}
+                resource={resource}
+                categoryPath={pathLabel(library.categoryById, resource.categoryId)}
+              />
             ))}
           </div>
           {results.length > shown.length ? (
             <div className="load-more">
               <button type="button" className="button button--soft" onClick={() => setVisible((n) => n + PAGE_SIZE)}>
-                Show more ({results.length - shown.length} remaining)
+                {t('page.showMore', { n: results.length - shown.length })}
               </button>
             </div>
           ) : null}

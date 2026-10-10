@@ -67,9 +67,21 @@ export type ThemeMode = (typeof THEME_MODES)[number];
 export const MOTION_MODES = ['system', 'reduce', 'full'] as const;
 export type MotionMode = (typeof MOTION_MODES)[number];
 
+export const LANGUAGES = ['en', 'ar'] as const;
+export type Language = (typeof LANGUAGES)[number];
+
+export const PERFORMANCE_MODES = ['auto', 'lite', 'full'] as const;
+export type PerformanceMode = (typeof PERFORMANCE_MODES)[number];
+
 export interface AppSettings {
   theme: ThemeMode;
   motion: MotionMode;
+  /** Interface language. Saved content is never translated. */
+  language: Language;
+  /** "lite" removes blur and background animation; "auto" decides from the device. */
+  performance: PerformanceMode;
+  /** True when the desktop library sidebar is hidden. */
+  sidebarHidden: boolean;
   /** When false, no third-party image is ever requested. */
   remoteThumbnails: boolean;
   /** ISO timestamp of the last JSON export, if any. */

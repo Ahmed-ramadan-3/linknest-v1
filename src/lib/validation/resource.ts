@@ -1,4 +1,5 @@
 import { LIMITS, RESOURCE_TYPE_META } from '../../config/app';
+import { translate } from '../../i18n/core';
 import type { Platform, Resource, ResourceType } from '../../types';
 import { PLATFORMS } from '../../types';
 import { detectPlatform } from '../platform';
@@ -43,7 +44,7 @@ export function validateDraft(draft: ResourceDraft): DraftResult {
   const meta = RESOURCE_TYPE_META[draft.type];
 
   const title = cleanLine(draft.title, LIMITS.title);
-  if (!title) errors.title = 'Give this resource a title.';
+  if (!title) errors.title = translate('err.title');
 
   let url = '';
   const rawUrl = draft.url.trim();
@@ -55,20 +56,20 @@ export function validateDraft(draft: ResourceDraft): DraftResult {
 
   const promptContent = cleanMultiline(draft.promptContent, LIMITS.promptContent);
   if (draft.type === 'prompt' && !promptContent.trim()) {
-    errors.promptContent = 'Paste or write the prompt text.';
+    errors.promptContent = translate('err.promptText');
   }
 
-  if (!draft.categoryId) errors.categoryId = 'Choose a category.';
+  if (!draft.categoryId) errors.categoryId = translate('err.chooseCategory');
 
   let thumbnailUrl: string | null = null;
   if (draft.thumbnailUrl.trim()) {
     const checked = checkUrl(draft.thumbnailUrl);
     if (checked.ok) thumbnailUrl = checked.url;
-    else errors.thumbnailUrl = 'The image address must be a valid http(s) URL.';
+    else errors.thumbnailUrl = translate('err.thumbUrl');
   }
 
   const createdAt = cleanIsoDate(draft.createdAt);
-  if (!createdAt) errors.createdAt = 'Enter a valid date.';
+  if (!createdAt) errors.createdAt = translate('err.date');
 
   if (Object.keys(errors).length > 0 || !createdAt) return { errors, value: null };
 

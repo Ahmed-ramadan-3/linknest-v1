@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { LuCheck, LuCopy } from 'react-icons/lu';
 import { useToast } from '../../hooks/useToast';
+import { useI18n } from '../../i18n';
 import { copyText } from '../../lib/clipboard';
 
 interface CopyButtonProps {
@@ -14,6 +15,7 @@ interface CopyButtonProps {
 /** Copies text, shows a small success state on the button and a transient toast. */
 export function CopyButton({ text, label, successMessage, variant = 'icon' }: CopyButtonProps) {
   const toast = useToast();
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   const timer = useRef<number | undefined>(undefined);
 
@@ -22,7 +24,7 @@ export function CopyButton({ text, label, successMessage, variant = 'icon' }: Co
   const onClick = async () => {
     const ok = await copyText(text);
     if (!ok) {
-      toast.error('Copying is not available here. Select the text and copy it manually.');
+      toast.error(t('action.copyFailed'));
       return;
     }
     toast.success(successMessage);
@@ -36,7 +38,7 @@ export function CopyButton({ text, label, successMessage, variant = 'icon' }: Co
     return (
       <button type="button" className={`button button--soft${copied ? ' is-copied' : ''}`} onClick={onClick}>
         <Glyph className="icon pop" size={16} aria-hidden="true" key={String(copied)} />
-        {copied ? 'Copied' : label}
+        {copied ? t('common.copied') : label}
       </button>
     );
   }

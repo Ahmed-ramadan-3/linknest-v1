@@ -1,13 +1,14 @@
 import { LuFolderPlus } from 'react-icons/lu';
 import { useAppUi } from '../../hooks/useAppUi';
 import { useLibrary } from '../../hooks/useLibrary';
-import { pluralize } from '../../lib/format';
+import { useI18n } from '../../i18n';
 import type { CategoryNode } from '../../lib/categories/tree';
 import { Icon } from '../ui/icons';
 
 function NodeButton({ node, size }: { node: CategoryNode; size: 'root' | 'child' }) {
   const { counts } = useLibrary();
   const { navigate } = useAppUi();
+  const { plural } = useI18n();
   const { category } = node;
   const total = counts.total.get(category.id) ?? 0;
   return (
@@ -21,7 +22,7 @@ function NodeButton({ node, size }: { node: CategoryNode; size: 'root' | 'child'
       </span>
       <span className="node__text">
         <span className="node__name">{category.name}</span>
-        <span className="node__meta">{pluralize(total, 'resource')}</span>
+        <span className="node__meta">{plural('count.resource', total)}</span>
       </span>
     </button>
   );
@@ -41,8 +42,9 @@ export function BranchMap({
   emptyHint?: string;
 }) {
   const { navigate } = useAppUi();
+  const { t } = useI18n();
   return (
-    <section className="branch glass" aria-label={`${root.category.name} structure`}>
+    <section className="branch glass" aria-label={t('map.structure', { name: root.category.name })}>
       <div className="branch__root">
         <NodeButton node={root} size="root" />
       </div>
@@ -52,7 +54,7 @@ export function BranchMap({
             <li key={child.category.id} className="branch__child">
               <NodeButton node={child} size="child" />
               {child.children.length > 0 ? (
-                <ul className="branch__grand" aria-label={`${child.category.name} subcategories`}>
+                <ul className="branch__grand" aria-label={t('map.subcategories', { name: child.category.name })}>
                   {child.children.map((grand) => (
                     <li key={grand.category.id}>
                       <button
@@ -75,7 +77,7 @@ export function BranchMap({
                   <LuFolderPlus className="icon" size={17} aria-hidden="true" />
                 </span>
                 <span className="node__text">
-                  <span className="node__name">Add subcategory</span>
+                  <span className="node__name">{t('map.addSub')}</span>
                 </span>
               </button>
             </li>

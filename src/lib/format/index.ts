@@ -1,25 +1,42 @@
-const dateFormatter = new Intl.DateTimeFormat(undefined, {
-  year: 'numeric',
-  month: 'short',
-  day: 'numeric',
-});
+import { LOCALE, getLanguage, translate } from '../../i18n/core';
 
-const dateTimeFormatter = new Intl.DateTimeFormat(undefined, {
-  year: 'numeric',
-  month: 'short',
-  day: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-});
+const dateFormatters = new Map<string, Intl.DateTimeFormat>();
+const dateTimeFormatters = new Map<string, Intl.DateTimeFormat>();
+
+function dateFormatter(): Intl.DateTimeFormat {
+  const locale = LOCALE[getLanguage()];
+  let formatter = dateFormatters.get(locale);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, { year: 'numeric', month: 'short', day: 'numeric' });
+    dateFormatters.set(locale, formatter);
+  }
+  return formatter;
+}
+
+function dateTimeFormatter(): Intl.DateTimeFormat {
+  const locale = LOCALE[getLanguage()];
+  let formatter = dateTimeFormatters.get(locale);
+  if (!formatter) {
+    formatter = new Intl.DateTimeFormat(locale, {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    dateTimeFormatters.set(locale, formatter);
+  }
+  return formatter;
+}
 
 export function formatDate(iso: string): string {
   const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? '' : dateFormatter.format(date);
+  return Number.isNaN(date.getTime()) ? '' : dateFormatter().format(date);
 }
 
 export function formatDateTime(iso: string): string {
   const date = new Date(iso);
-  return Number.isNaN(date.getTime()) ? '' : dateTimeFormatter.format(date);
+  return Number.isNaN(date.getTime()) ? '' : dateTimeFormatter().format(date);
 }
 
 function pad(value: number): string {
@@ -60,8 +77,8 @@ export function hashString(value: string): number {
 
 export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return '—';
-  if (bytes < 1024) return `${bytes} B`;
-  const units = ['KB', 'MB', 'GB', 'TB'];
+  if (bytes < 1024) return `${bytes} ${translate('unit.b')}`;
+  const units = [translate('unit.kb'), translate('unit.mb'), translate('unit.gb'), translate('unit.tb')];
   let value = bytes / 1024;
   let unit = 0;
   while (value >= 1024 && unit < units.length - 1) {

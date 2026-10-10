@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from 'react';
+import { useI18n } from '../../i18n';
 import { Dialog } from './Dialog';
 
 interface ConfirmDialogProps {
@@ -18,12 +19,13 @@ export function ConfirmDialog({
   title,
   children,
   confirmLabel,
-  cancelLabel = 'Cancel',
+  cancelLabel,
   danger = false,
   requireText,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const { t } = useI18n();
   const [typed, setTyped] = useState('');
   const [busy, setBusy] = useState(false);
   const allowed = !requireText || typed.trim() === requireText;
@@ -47,7 +49,7 @@ export function ConfirmDialog({
       footer={
         <>
           <button type="button" className="button button--ghost" onClick={onCancel} disabled={busy}>
-            {cancelLabel}
+            {cancelLabel ?? t('common.cancel')}
           </button>
           <button
             type="button"
@@ -65,7 +67,12 @@ export function ConfirmDialog({
         {requireText ? (
           <label className="field">
             <span className="field__label">
-              Type <strong>{requireText}</strong> to confirm
+              {t('settings.typeToConfirm', { word: '\u0000' }).split('\u0000').map((part, index) => (
+                <span key={index}>
+                  {index > 0 ? <strong>{requireText}</strong> : null}
+                  {part}
+                </span>
+              ))}
             </span>
             <input
               className="input"

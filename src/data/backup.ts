@@ -1,4 +1,5 @@
 import { LIMITS, RESOURCE_TYPE_META, SCHEMA_VERSION } from '../config/app';
+import { translate } from '../i18n/core';
 import type {
   AppSettings,
   Category,
@@ -7,7 +8,15 @@ import type {
   Resource,
   ResourceType,
 } from '../types';
-import { EXPORT_APP_ID, MOTION_MODES, PLATFORMS, RESOURCE_TYPES, THEME_MODES } from '../types';
+import {
+  EXPORT_APP_ID,
+  LANGUAGES,
+  MOTION_MODES,
+  PERFORMANCE_MODES,
+  PLATFORMS,
+  RESOURCE_TYPES,
+  THEME_MODES,
+} from '../types';
 import { detectPlatform } from '../lib/platform';
 import { checkUrl, hostLabel } from '../lib/url';
 import {
@@ -67,35 +76,35 @@ export function serializeBackup(backup: ImportExportSchema): string {
  */
 export function parseBackup(text: string): ParseResult {
   if (text.length > LIMITS.importFileBytes) {
-    return { ok: false, error: 'This file is too large to be a LinkNest backup.' };
+    return { ok: false, error: translate('import.tooLarge') };
   }
 
   let raw: unknown;
   try {
     raw = JSON.parse(text);
   } catch {
-    return { ok: false, error: 'This file is not valid JSON. Choose a backup exported from LinkNest.' };
+    return { ok: false, error: translate('import.notJson') };
   }
 
   const root = asObject(raw);
   if (!root || root.app !== EXPORT_APP_ID) {
-    return { ok: false, error: 'This file is not a LinkNest backup.' };
+    return { ok: false, error: translate('import.notBackup') };
   }
   const version = root.schemaVersion;
   if (typeof version !== 'number' || !Number.isInteger(version) || version < 1) {
-    return { ok: false, error: 'This backup has no valid version number.' };
+    return { ok: false, error: translate('import.noVersion') };
   }
   if (version > SCHEMA_VERSION) {
     return {
       ok: false,
-      error: 'This backup was created by a newer version of LinkNest. Update the app and try again.',
+      error: translate('import.newer'),
     };
   }
   if (!Array.isArray(root.categories) || !Array.isArray(root.resources)) {
-    return { ok: false, error: 'This backup is missing its categories or resources.' };
+    return { ok: false, error: translate('import.missing') };
   }
   if (root.categories.length > LIMITS.categories || root.resources.length > LIMITS.resources) {
-    return { ok: false, error: 'This backup contains more items than LinkNest supports.' };
+    return { ok: false, error: translate('import.tooMany') };
   }
 
   const warnings: string[] = [];
@@ -141,7 +150,7 @@ function sanitizeCategories(items: unknown[], now: string, warnings: string[]): 
   }
 
   repairHierarchy(result);
-  if (dropped > 0) warnings.push(`${dropped} invalid or duplicate categor${dropped === 1 ? 'y was' : 'ies were'} skipped.`);
+  if (dropped > 0) warnings.push(translate('import.skippedCategories', { n: dropped }));
   return result;
 }
 
@@ -252,14 +261,10 @@ function sanitizeResources(
   }
 
   if (dropped > 0) {
-    warnings.push(
-      `${dropped} resource${dropped === 1 ? ' was' : 's were'} skipped because of an invalid URL, missing title or malformed data.`,
-    );
+    warnings.push(translate('import.skippedResources', { n: dropped }));
   }
   if (uncategorized > 0) {
-    warnings.push(
-      `${uncategorized} resource${uncategorized === 1 ? ' has' : 's have'} no valid category and will appear as Uncategorized.`,
-    );
+    warnings.push(translate('import.uncategorized', { n: uncategorized }));
   }
   return result;
 }
@@ -273,6 +278,12 @@ function sanitizeSettings(value: unknown): Partial<AppSettings> {
   }
   if (MOTION_MODES.includes(record.motion as AppSettings['motion'])) {
     settings.motion = record.motion as AppSettings['motion'];
+  }
+  if (LANGUAGES.includes(record.language as AppSettings['language'])) {
+    settings.language = record.language as AppSettings['language'];
+  }
+  if (PERFORMANCE_MODES.includes(record.performance as AppSettings['performance'])) {
+    settings.performance = record.performance as AppSettings['performance'];
   }
   if (typeof record.remoteThumbnails === 'boolean') settings.remoteThumbnails = record.remoteThumbnails;
   return settings;

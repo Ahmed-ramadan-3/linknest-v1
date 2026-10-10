@@ -16,8 +16,12 @@ export const SCHEMA_VERSION = 1;
 export const PREFS_STORAGE_KEY = 'linknest.prefs.v1';
 export const SYNC_CHANNEL = 'linknest-sync';
 
+/** First visit: the full branded intro. */
 export const SPLASH_DURATION_MS = 5000;
-export const SPLASH_SKIP_AFTER_MS = 1500;
+/** Later visits: a shorter intro so opening the app is quick. */
+export const SPLASH_RETURNING_MS = 2000;
+export const SPLASH_SKIP_AFTER_MS = 600;
+export const VISITED_STORAGE_KEY = 'linknest.visited.v1';
 export const SEARCH_DEBOUNCE_MS = 120;
 export const TOAST_DURATION_MS = 2400;
 export const RECENT_COUNT = 8;

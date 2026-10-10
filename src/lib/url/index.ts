@@ -1,4 +1,5 @@
 import { LIMITS } from '../../config/app';
+import { translate } from '../../i18n/core';
 import { extractYouTubeId } from '../platform';
 
 export type UrlCheck = { ok: true; url: string } | { ok: false; reason: string };
@@ -29,14 +30,14 @@ export function parseHttpUrl(raw: string): URL | null {
 
 export function checkUrl(raw: string): UrlCheck {
   const input = (raw ?? '').trim();
-  if (!input) return { ok: false, reason: 'Enter a URL.' };
-  if (input.length > LIMITS.url) return { ok: false, reason: 'This URL is too long.' };
-  if (FORBIDDEN_CHARS.test(input)) return { ok: false, reason: 'This URL contains spaces or invalid characters.' };
+  if (!input) return { ok: false, reason: translate('err.url.empty') };
+  if (input.length > LIMITS.url) return { ok: false, reason: translate('err.url.tooLong') };
+  if (FORBIDDEN_CHARS.test(input)) return { ok: false, reason: translate('err.url.chars') };
 
   let candidate = input;
   if (ANY_SCHEME.test(input) && !HOST_WITH_PORT.test(input)) {
     if (!/^https?:\/\//i.test(input)) {
-      return { ok: false, reason: 'Only http:// and https:// links can be saved.' };
+      return { ok: false, reason: translate('err.url.scheme') };
     }
   } else if (!/^https?:\/\//i.test(input)) {
     candidate = `https://${input.replace(/^\/\//, '')}`;
@@ -46,16 +47,16 @@ export function checkUrl(raw: string): UrlCheck {
   try {
     parsed = new URL(candidate);
   } catch {
-    return { ok: false, reason: 'This does not look like a valid URL.' };
+    return { ok: false, reason: translate('err.url.invalid') };
   }
   if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
-    return { ok: false, reason: 'Only http:// and https:// links can be saved.' };
+    return { ok: false, reason: translate('err.url.scheme') };
   }
   if (parsed.username || parsed.password) {
-    return { ok: false, reason: 'URLs with a username or password are not supported.' };
+    return { ok: false, reason: translate('err.url.credentials') };
   }
   if (!parsed.hostname || !looksLikeHost(parsed.hostname)) {
-    return { ok: false, reason: 'This does not look like a valid URL.' };
+    return { ok: false, reason: translate('err.url.invalid') };
   }
   return { ok: true, url: candidate };
 }

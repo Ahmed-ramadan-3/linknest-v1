@@ -1,5 +1,7 @@
 import { LuCalendar, LuFolder, LuLink } from 'react-icons/lu';
 import { PLATFORM_META, RESOURCE_TYPE_META } from '../../config/app';
+import { useI18n } from '../../i18n';
+import { platformLabel, typeLabel } from '../../lib/labels';
 import { useAppUi } from '../../hooks/useAppUi';
 import { useLibrary } from '../../hooks/useLibrary';
 import { formatDateTime } from '../../lib/format';
@@ -20,12 +22,13 @@ import { Thumbnail } from '../ui/Thumbnail';
 export function ResourceDetailDialog({ id }: { id: string }) {
   const { resources, categoryById } = useLibrary();
   const { closeModal, navigate } = useAppUi();
+  const { t } = useI18n();
   const resource = resources.find((item) => item.id === id);
 
   if (!resource) {
     return (
-      <Dialog title="Resource not found" size="sm" onClose={closeModal}>
-        <p className="prose">This resource no longer exists. It may have been deleted in another tab.</p>
+      <Dialog title={t('detail.notFound')} size="sm" onClose={closeModal}>
+        <p className="prose">{t('detail.notFoundBody')}</p>
       </Dialog>
     );
   }
@@ -33,7 +36,7 @@ export function ResourceDetailDialog({ id }: { id: string }) {
   const meta = RESOURCE_TYPE_META[resource.type];
   const href = toSafeHref(resource.url);
   const path = pathTo(categoryById, resource.categoryId);
-  const platform = resource.platform && resource.platform !== 'other' ? PLATFORM_META[resource.platform] : null;
+  const platform = resource.platform && resource.platform !== 'other' ? resource.platform : null;
 
   return (
     <Dialog title={resource.title} size="lg" onClose={closeModal}>
@@ -47,15 +50,15 @@ export function ResourceDetailDialog({ id }: { id: string }) {
         <div className="detail__badges">
           <span className="badge">
             <Icon name={meta.icon} size={13} />
-            {meta.label}
+            {typeLabel(resource.type)}
           </span>
           {platform ? (
             <span className="badge">
-              <Icon name={platform.icon} size={13} />
-              {platform.label}
+              <Icon name={PLATFORM_META[platform].icon} size={13} />
+              {platformLabel(platform)}
             </span>
           ) : null}
-          {resource.project ? <span className="badge badge--quiet">Project: {resource.project}</span> : null}
+          {resource.project ? <span className="badge badge--quiet">{t('detail.project', { name: resource.project })}</span> : null}
         </div>
 
         {href ? (
@@ -70,13 +73,13 @@ export function ResourceDetailDialog({ id }: { id: string }) {
         {resource.description ? <p className="detail__text">{resource.description}</p> : null}
 
         {resource.type === 'prompt' && resource.promptContent ? (
-          <section className="detail__section" aria-label="Prompt">
+          <section className="detail__section" aria-label={t('detail.prompt')}>
             <div className="detail__section-head">
-              <h3>Prompt</h3>
+              <h3>{t('detail.prompt')}</h3>
               <CopyButton
                 text={resource.promptContent}
-                label="Copy Prompt"
-                successMessage="Prompt copied"
+                label={t('action.copyPrompt')}
+                successMessage={t('action.promptCopied')}
                 variant="button"
               />
             </div>
@@ -85,14 +88,14 @@ export function ResourceDetailDialog({ id }: { id: string }) {
         ) : null}
 
         {resource.notes ? (
-          <section className="detail__section" aria-label="Notes">
-            <h3>Notes</h3>
+          <section className="detail__section" aria-label={t('detail.notes')}>
+            <h3>{t('detail.notes')}</h3>
             <p className="detail__text detail__text--pre">{resource.notes}</p>
           </section>
         ) : null}
 
         {resource.tags.length > 0 ? (
-          <ul className="chips" aria-label="Tags">
+          <ul className="chips" aria-label={t('card.tags')}>
             {resource.tags.map((tag) => (
               <li key={tag}>
                 <button
@@ -113,11 +116,11 @@ export function ResourceDetailDialog({ id }: { id: string }) {
         <dl className="meta-list">
           <div>
             <dt>
-              <LuFolder className="icon" size={14} aria-hidden="true" /> Category
+              <LuFolder className="icon" size={14} aria-hidden="true" /> {t('detail.category')}
             </dt>
             <dd>
               {path.length === 0 ? (
-                'Uncategorized'
+                t('detail.uncategorized')
               ) : (
                 <span className="crumbs-inline">
                   {path.map((category, index) => (
@@ -141,13 +144,13 @@ export function ResourceDetailDialog({ id }: { id: string }) {
           </div>
           <div>
             <dt>
-              <LuCalendar className="icon" size={14} aria-hidden="true" /> Saved
+              <LuCalendar className="icon" size={14} aria-hidden="true" /> {t('detail.saved')}
             </dt>
             <dd>{formatDateTime(resource.createdAt)}</dd>
           </div>
           <div>
             <dt>
-              <LuCalendar className="icon" size={14} aria-hidden="true" /> Updated
+              <LuCalendar className="icon" size={14} aria-hidden="true" /> {t('detail.updated')}
             </dt>
             <dd>{formatDateTime(resource.updatedAt)}</dd>
           </div>
@@ -157,7 +160,7 @@ export function ResourceDetailDialog({ id }: { id: string }) {
           {resource.url ? <OpenLink resource={resource} /> : null}
           {resource.type !== 'prompt' ? <CopyAction resource={resource} variant="button" /> : null}
           {resource.type === 'prompt' && resource.url ? (
-            <CopyButton text={resource.url} label="Copy URL" successMessage="Link copied" variant="button" />
+            <CopyButton text={resource.url} label={t('action.copyUrl')} successMessage={t('action.linkCopied')} variant="button" />
           ) : null}
           <div className="detail__actions-end">
             <FavoriteButton resource={resource} />

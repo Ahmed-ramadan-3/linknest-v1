@@ -8,6 +8,7 @@ import {
   type ReactNode,
 } from 'react';
 import { LuX } from 'react-icons/lu';
+import { useI18n } from '../../i18n';
 
 export type DialogSize = 'sm' | 'md' | 'lg';
 
@@ -47,6 +48,7 @@ export function Dialog({
   dismissible = true,
   onBeforeDismiss,
 }: DialogProps) {
+  const { t } = useI18n();
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const descriptionId = useId();
@@ -63,19 +65,25 @@ export function Dialog({
     if (element && !element.open) element.showModal();
   }, []);
 
-  useEffect(() => {
+  const restoreFocus = useCallback(() => {
     const previous = opener.current;
-    return () => {
-      if (previous && document.contains(previous)) previous.focus();
-    };
+    if (previous && document.contains(previous)) previous.focus();
   }, []);
+
+  // Safety net for dialogs that are removed without going through requestClose.
+  useEffect(() => restoreFocus, [restoreFocus]);
 
   const requestClose = useCallback(() => {
     if (!dismissible || closing) return;
     if (onBeforeDismiss && !onBeforeDismiss()) return;
     setClosing(true);
-    window.setTimeout(onClose, EXIT_MS);
-  }, [closing, dismissible, onBeforeDismiss, onClose]);
+    window.setTimeout(() => {
+      // Closing the native dialog first lifts its "modal" lock; focus cannot return to the opener before that.
+      ref.current?.close();
+      restoreFocus();
+      onClose();
+    }, EXIT_MS);
+  }, [closing, dismissible, onBeforeDismiss, onClose, restoreFocus]);
 
   return (
     <dialog
@@ -107,7 +115,7 @@ export function Dialog({
           <button
             type="button"
             className="icon-button dialog__close"
-            aria-label="Close"
+            aria-label={t('dialog.close')}
             onClick={requestClose}
             disabled={!dismissible}
           >

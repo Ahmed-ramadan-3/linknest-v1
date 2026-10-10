@@ -38,8 +38,7 @@
 .ambient__shape {
   position: absolute;
   border-radius: 50%;
-  filter: blur(90px);
-  will-change: transform;
+  /* Soft edges come from the radial gradient itself; a blur filter on layers this large is costly. */
 }
 
 .ambient__shape--a {
@@ -48,6 +47,7 @@
   width: 52vmax;
   height: 52vmax;
   background: radial-gradient(circle, var(--ambient-a), transparent 68%);
+  will-change: transform;
   animation: drift-a 48s ease-in-out infinite alternate;
 }
 
@@ -57,6 +57,7 @@
   width: 58vmax;
   height: 58vmax;
   background: radial-gradient(circle, var(--ambient-b), transparent 68%);
+  will-change: transform;
   animation: drift-b 60s ease-in-out infinite alternate;
 }
 

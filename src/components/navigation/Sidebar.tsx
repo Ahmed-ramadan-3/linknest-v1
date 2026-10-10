@@ -3,14 +3,15 @@ import { LuFolderPlus, LuHouse, LuLayoutGrid, LuLock, LuStar } from 'react-icons
 import { APP_NAME } from '../../config/app';
 import { useAppUi } from '../../hooks/useAppUi';
 import { useLibrary } from '../../hooks/useLibrary';
+import { useI18n } from '../../i18n';
 import { LogoMark } from '../ui/LogoMark';
 import { CategoryTree } from './CategoryTree';
 
 /** Primary navigation: home, all, favorites and the category hierarchy. */
 export function Sidebar() {
   const { route, navigate, openModal } = useAppUi();
-  const { resources, counts } = useLibrary();
-  const favorites = resources.filter((r) => r.favorite).length;
+  const { resources, counts, favoritesCount } = useLibrary();
+  const { t, plural } = useI18n();
 
   const item = (
     label: string,
@@ -32,7 +33,7 @@ export function Sidebar() {
   );
 
   return (
-    <nav className="sidebar" aria-label="Main">
+    <nav className="sidebar" aria-label={t('nav.main')}>
       <div className="sidebar__brand">
         <span className="brand-mark">
           <LogoMark size={22} />
@@ -41,18 +42,18 @@ export function Sidebar() {
       </div>
 
       <div className="sidebar__group">
-        {item('Home', route.name === 'home', () => navigate({ name: 'home' }), <LuHouse className="icon" size={18} aria-hidden="true" />)}
-        {item('All Resources', route.name === 'all', () => navigate({ name: 'all' }), <LuLayoutGrid className="icon" size={18} aria-hidden="true" />, resources.length)}
-        {item('Favorites', route.name === 'favorites', () => navigate({ name: 'favorites' }), <LuStar className="icon" size={18} aria-hidden="true" />, favorites)}
+        {item(t('nav.home'), route.name === 'home', () => navigate({ name: 'home' }), <LuHouse className="icon" size={18} aria-hidden="true" />)}
+        {item(t('nav.all'), route.name === 'all', () => navigate({ name: 'all' }), <LuLayoutGrid className="icon" size={18} aria-hidden="true" />, resources.length)}
+        {item(t('nav.favorites'), route.name === 'favorites', () => navigate({ name: 'favorites' }), <LuStar className="icon" size={18} aria-hidden="true" />, favoritesCount)}
       </div>
 
       <div className="sidebar__heading">
-        <span>Library</span>
+        <span>{t('nav.library')}</span>
         <button
           type="button"
           className="icon-button"
-          aria-label="New category"
-          title="New category"
+          aria-label={t('nav.newCategory')}
+          title={t('nav.newCategory')}
           onClick={() => openModal({ kind: 'category', mode: 'create', parentId: null })}
         >
           <LuFolderPlus className="icon" size={16} aria-hidden="true" />
@@ -62,16 +63,13 @@ export function Sidebar() {
       <div className="sidebar__scroll">
         <CategoryTree />
         {counts.uncategorized > 0 ? (
-          <p className="sidebar__note">
-            {counts.uncategorized} resource{counts.uncategorized === 1 ? ' is' : 's are'} uncategorized. Find
-            {counts.uncategorized === 1 ? ' it' : ' them'} in All Resources.
-          </p>
+          <p className="sidebar__note">{plural('nav.uncategorized', counts.uncategorized)}</p>
         ) : null}
       </div>
 
       <button type="button" className="sidebar__privacy" onClick={() => openModal({ kind: 'settings' })}>
         <LuLock className="icon" size={15} aria-hidden="true" />
-        <span>Stored only in this browser</span>
+        <span>{t('nav.privacy')}</span>
       </button>
     </nav>
   );

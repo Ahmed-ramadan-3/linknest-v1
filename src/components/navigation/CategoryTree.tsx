@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { LuChevronRight } from 'react-icons/lu';
 import { useAppUi } from '../../hooks/useAppUi';
+import { useI18n } from '../../i18n';
 import { useLibrary } from '../../hooks/useLibrary';
 import { buildTree, pathTo, type CategoryNode } from '../../lib/categories/tree';
 import { Icon } from '../ui/icons';
@@ -9,6 +10,7 @@ import { Icon } from '../ui/icons';
 export function CategoryTree() {
   const { categories, categoryById, counts } = useLibrary();
   const { route, navigate } = useAppUi();
+  const { t } = useI18n();
   const tree = useMemo(() => buildTree(categories), [categories]);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
 
@@ -49,7 +51,7 @@ export function CategoryTree() {
             <button
               type="button"
               className="tree__toggle"
-              aria-label={`${open ? 'Collapse' : 'Expand'} ${category.name}`}
+              aria-label={t(open ? 'tree.collapse' : 'tree.expand', { name: category.name })}
               aria-expanded={open}
               onClick={() => toggle(category.id)}
             >
@@ -83,11 +85,11 @@ export function CategoryTree() {
   };
 
   if (tree.length === 0) {
-    return <p className="sidebar__note">No categories yet. Create one to start organizing.</p>;
+    return <p className="sidebar__note">{t('tree.empty')}</p>;
   }
 
   return (
-    <ul className="tree" aria-label="Categories">
+    <ul className="tree" aria-label={t('tree.label')}>
       {tree.map(renderNode)}
     </ul>
   );

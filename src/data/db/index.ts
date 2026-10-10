@@ -1,3 +1,4 @@
+import { translate } from '../../i18n/core';
 import { logDev } from '../../lib/log';
 import { openIndexedDb } from './indexedDb';
 import { MemoryAdapter } from './memory';
@@ -21,7 +22,7 @@ export async function createStorage(): Promise<StorageHandle> {
     return {
       adapter: new MemoryAdapter(),
       persistent: false,
-      warning: `${describeStorageError(error)} Changes will be lost when you close this tab, so export a backup before leaving.`,
+      warning: translate('storage.memoryWarning', { reason: describeStorageError(error) }),
     };
   }
 }

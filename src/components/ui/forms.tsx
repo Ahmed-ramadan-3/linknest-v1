@@ -1,6 +1,7 @@
 import { useId, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { LuX } from 'react-icons/lu';
 import { ICON_KEYS, type IconKey } from '../../config/icons';
+import { useI18n } from '../../i18n';
 import { buildTree, flattenTree } from '../../lib/categories/tree';
 import { parseTagInput } from '../../lib/validation/sanitize';
 import { ACCENT_KEYS, type AccentKey, type Category } from '../../types';
@@ -71,6 +72,7 @@ export function CategorySelect({
   /** Smaller control for toolbars. */
   compact?: boolean;
 }) {
+  const { t } = useI18n();
   const nodes = useMemo(() => flattenTree(buildTree(categories)), [categories]);
   return (
     <select
@@ -81,7 +83,7 @@ export function CategorySelect({
       aria-describedby={describedBy}
       onChange={(event) => onChange(event.target.value || null)}
     >
-      <option value="">{emptyLabel ?? 'Choose a category…'}</option>
+      <option value="">{emptyLabel ?? t('form.chooseCategory')}</option>
       {nodes
         .filter((node) => !excludeIds?.has(node.category.id))
         .map((node) => (
@@ -104,6 +106,7 @@ export function TagInput({
   onChange: (tags: string[]) => void;
   suggestions: string[];
 }) {
+  const { t } = useI18n();
   const [text, setText] = useState('');
   const listId = useId();
 
@@ -132,7 +135,7 @@ export function TagInput({
               <button
                 type="button"
                 className="chip__remove"
-                aria-label={`Remove tag ${tag}`}
+                aria-label={t('form.removeTag', { tag })}
                 onClick={() => onChange(tags.filter((t) => t !== tag))}
               >
                 <LuX className="icon" size={12} aria-hidden="true" />
@@ -146,7 +149,7 @@ export function TagInput({
         className="input"
         value={text}
         list={listId}
-        placeholder="Add a tag and press Enter"
+        placeholder={t('form.addTag')}
         autoComplete="off"
         onChange={(event) => setText(event.target.value)}
         onKeyDown={onKeyDown}
@@ -176,6 +179,7 @@ export function IconPicker({
   allowAuto?: boolean;
   label: string;
 }) {
+  const { t } = useI18n();
   return (
     <div className="icon-picker" role="radiogroup" aria-label={label}>
       {allowAuto ? (
@@ -186,7 +190,7 @@ export function IconPicker({
           className={`icon-picker__item icon-picker__item--auto${value === null ? ' is-selected' : ''}`}
           onClick={() => onChange(null)}
         >
-          Auto
+          {t('common.auto')}
         </button>
       ) : null}
       {ICON_KEYS.map((key) => (
@@ -214,8 +218,9 @@ export function AccentPicker({
   value: AccentKey | null;
   onChange: (value: AccentKey | null) => void;
 }) {
+  const { t } = useI18n();
   return (
-    <div className="accent-picker" role="radiogroup" aria-label="Accent colour">
+    <div className="accent-picker" role="radiogroup" aria-label={t('cat.accentLabel')}>
       <button
         type="button"
         role="radio"
@@ -223,7 +228,7 @@ export function AccentPicker({
         className={`accent-picker__item accent-picker__item--none${value === null ? ' is-selected' : ''}`}
         onClick={() => onChange(null)}
       >
-        None
+        {t('picker.noneAccent')}
       </button>
       {ACCENT_KEYS.map((key) => (
         <button

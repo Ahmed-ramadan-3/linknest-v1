@@ -1,3 +1,4 @@
+import { useI18n } from '../../i18n';
 import { Dialog } from '../ui/Dialog';
 
 interface Props {
@@ -9,18 +10,19 @@ interface Props {
 }
 
 export function DuplicateDialog({ existing, confirmLabel, onOpenExisting, onAddAnyway, onCancel }: Props) {
+  const { t } = useI18n();
   return (
     <Dialog
-      title="This URL already exists."
+      title={t('dup.title')}
       size="sm"
       onClose={onCancel}
       footer={
         <>
           <button type="button" className="button button--ghost" onClick={onCancel}>
-            Cancel
+            {t('common.cancel')}
           </button>
           <button type="button" className="button button--soft" onClick={onOpenExisting}>
-            Open existing resource
+            {t('dup.openExisting')}
           </button>
           <button type="button" className="button button--primary" onClick={onAddAnyway}>
             {confirmLabel}
@@ -30,7 +32,14 @@ export function DuplicateDialog({ existing, confirmLabel, onOpenExisting, onAddA
     >
       <div className="stack prose">
         <p>
-          You already saved this link as <strong>{existing.title}</strong>.
+          {t('dup.body', { title: '\u0000' })
+            .split('\u0000')
+            .map((part, index) => (
+              <span key={index}>
+                {index > 0 ? <strong>{existing.title}</strong> : null}
+                {part}
+              </span>
+            ))}
         </p>
         <p className="muted break">{existing.url}</p>
       </div>

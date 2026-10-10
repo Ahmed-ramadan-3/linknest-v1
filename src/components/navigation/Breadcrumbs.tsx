@@ -1,21 +1,23 @@
 import { LuChevronRight } from 'react-icons/lu';
 import { useAppUi } from '../../hooks/useAppUi';
+import { useI18n } from '../../i18n';
 import type { Category } from '../../types';
 
 /** Home / Programming / Frontend. The last item is the current page. */
 export function Breadcrumbs({ path, label }: { path: Category[]; label?: string }) {
   const { navigate } = useAppUi();
+  const { t } = useI18n();
   return (
-    <nav className="breadcrumbs" aria-label="Breadcrumb">
+    <nav className="breadcrumbs" aria-label={t('breadcrumb.label')}>
       <ol>
         <li>
           <button type="button" className="link-button" onClick={() => navigate({ name: 'home' })}>
-            Home
+            {t('nav.home')}
           </button>
         </li>
         {label ? (
           <li aria-current="page">
-            <LuChevronRight className="icon breadcrumbs__sep" size={14} aria-hidden="true" />
+            <LuChevronRight className="icon icon--dir breadcrumbs__sep" size={14} aria-hidden="true" />
             <span>{label}</span>
           </li>
         ) : null}
@@ -23,7 +25,7 @@ export function Breadcrumbs({ path, label }: { path: Category[]; label?: string 
           const last = index === path.length - 1;
           return (
             <li key={category.id} aria-current={last ? 'page' : undefined}>
-              <LuChevronRight className="icon breadcrumbs__sep" size={14} aria-hidden="true" />
+              <LuChevronRight className="icon icon--dir breadcrumbs__sep" size={14} aria-hidden="true" />
               {last ? (
                 <span>{category.name}</span>
               ) : (
