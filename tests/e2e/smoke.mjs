@@ -209,6 +209,10 @@ await check('open link uses a new tab with noopener', async () => {
 });
 
 await check('search matches title, tags, prompt text and category; empty state helps', async () => {
+  // The search bar steps aside while scrolled down; scrolling back to the top shows it again.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForFunction(() => { const el = document.querySelector('.header__search'); return el && !el.classList.contains('is-hidden') && !el.hasAttribute('inert'); });
+  await page.waitForTimeout(350);
   await page.fill('.searchbar__input', 'authentication');
   await page.waitForFunction(() => document.querySelectorAll('article.card').length === 1);
   await page.fill('.searchbar__input', 'edge cases');
@@ -231,11 +235,14 @@ await check('filters and sorting', async () => {
   await page.waitForFunction(() => document.querySelectorAll('article.card').length === 1);
   await page.click('.filters__clear');
   await page.selectOption('.filters select >> nth=-1', 'title-asc');
-  const titles = await page.locator('.card__title').allInnerTexts();
+  const titleTexts = () => page.locator('.card__title').evaluateAll((nodes) => nodes.map((n) => n.textContent.trim()));
+  await page.waitForTimeout(300);
+  const titles = await titleTexts();
   const sorted = [...titles].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base', numeric: true }));
   expect(JSON.stringify(titles) === JSON.stringify(sorted), `not sorted: ${titles}`);
   await page.selectOption('.filters select >> nth=-1', 'title-desc');
-  expect((await page.locator('.card__title').first().innerText()) === titles.at(-1), 'Z-A');
+  await page.waitForTimeout(300);
+  expect((await titleTexts())[0] === titles.at(-1), 'Z-A');
   await page.selectOption('.filters select >> nth=-1', 'newest');
   await shot('04-all-resources');
 });
@@ -401,7 +408,9 @@ await check('keyboard: dialog traps focus, Escape closes, focus returns to opene
   expect(inside, 'focus escaped the dialog');
   await page.keyboard.press('Escape');
   await page.waitForSelector('dialog[open]', { state: 'detached' });
-  const back = await page.evaluate(() => document.activeElement?.classList.contains('header__add'));
+  const back = await page
+    .waitForFunction(() => document.activeElement?.classList.contains('header__add'), null, { timeout: 2000 })
+    .then(() => true, () => false);
   expect(back, 'focus not restored');
 });
 
@@ -467,6 +476,150 @@ await check('no horizontal overflow at phone, tablet, laptop and wide sizes', as
   await shot('09-mobile-drawer');
   await page.keyboard.press('Escape');
   await page.waitForSelector('.drawer.is-open', { state: 'detached' });
+});
+
+
+const resetViewport = async () => {
+  await page.setViewportSize({ width: 1360, height: 860 });
+  await page.waitForTimeout(150);
+};
+
+await check('language switch: Arabic flips text and direction, persists across reload, English returns', async () => {
+  await resetViewport();
+  await page.click('.shell__sidebar >> text=Home');
+  await page.click('.header__lang');
+  await page.waitForFunction(() => document.documentElement.lang === 'ar' && document.documentElement.dir === 'rtl');
+  await page.waitForSelector('.shell__sidebar >> text=كل الموارد');
+  expect((await page.locator('.header .header__add').innerText()).includes('إضافة'), 'Add button not Arabic');
+  expect(await page.locator('.shell__sidebar >> text=البرمجة').count() > 0, 'starter category not translated');
+  expect((await page.locator('.searchbar__input').getAttribute('placeholder')).includes('ابحث'), 'search placeholder');
+  await shot('20-arabic-home');
+  await page.click('.header .header__add');
+  await page.waitForSelector('text=ماذا تريد أن تحفظ؟');
+  await shot('21-arabic-add-dialog');
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('dialog[open]', { state: 'detached' });
+  await page.click('.shell__sidebar >> text=كل الموارد');
+  await page.waitForSelector('article.card');
+  await shot('22-arabic-library');
+  await page.click('.header [aria-label^="تعديل"], .header button[aria-label*="الإعدادات"]');
+  await page.waitForSelector('text=اللغة');
+  await shot('23-arabic-settings');
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('dialog[open]', { state: 'detached' });
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('linknest.prefs.v1')).language);
+  expect(stored === 'ar', 'language not saved');
+  await page.reload();
+  await dismissSplash();
+  expect((await page.evaluate(() => document.documentElement.dir)) === 'rtl', 'direction lost after reload');
+  await page.waitForSelector('.shell__sidebar >> text=كل الموارد');
+  await page.click('.header__lang');
+  await page.waitForFunction(() => document.documentElement.lang === 'en' && document.documentElement.dir === 'ltr');
+  await page.waitForSelector('.shell__sidebar >> text=All Resources');
+});
+
+await check('Arabic and English layouts never overflow horizontally', async () => {
+  for (const lang of ['ar', 'en']) {
+    await page.evaluate((value) => {
+      const prefs = JSON.parse(localStorage.getItem('linknest.prefs.v1') || '{}');
+      prefs.language = value;
+      localStorage.setItem('linknest.prefs.v1', JSON.stringify(prefs));
+    }, lang);
+    await page.reload();
+    await dismissSplash();
+    for (const width of [360, 768, 1360]) {
+      await page.setViewportSize({ width, height: 800 });
+      await page.waitForTimeout(150);
+      const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+      expect(over <= 1, `${lang} overflows by ${over}px at ${width}px`);
+    }
+  }
+  await resetViewport();
+});
+
+await check('library menu can be hidden and shown on desktop, and the choice persists', async () => {
+  await resetViewport();
+  const width = () => page.locator('.shell__content').evaluate((el) => el.getBoundingClientRect().width);
+  const before = await width();
+  await page.click('.header .header__menu');
+  await page.waitForSelector('.shell[data-sidebar="hidden"]');
+  await page.waitForTimeout(450);
+  expect((await page.locator('.shell__sidebar').evaluate((el) => getComputedStyle(el).visibility)) === 'hidden', 'sidebar still visible');
+  expect((await width()) > before + 200, 'content did not expand');
+  expect(await page.locator('.header .header__brand').isVisible(), 'brand should show in header when the sidebar is hidden');
+  await shot('24-sidebar-hidden');
+  await page.reload();
+  await dismissSplash();
+  expect((await page.evaluate(() => document.documentElement.dataset.sidebar)) === 'hidden', 'hidden state lost after reload');
+  await page.click('.header .header__menu');
+  await page.waitForSelector('.shell[data-sidebar="shown"]');
+  await page.waitForTimeout(450);
+  expect((await page.locator('.shell__sidebar').evaluate((el) => getComputedStyle(el).visibility)) === 'visible', 'sidebar did not return');
+  expect(await page.locator('.shell__sidebar >> text=All Resources').isVisible(), 'sidebar items missing');
+});
+
+await check('search bar hides while reading down the page and returns when scrolling back up', async () => {
+  await page.click('.shell__sidebar >> text=All Resources');
+  await page.waitForSelector('article.card');
+  await page.evaluate(() => { document.querySelector('.main').style.minHeight = '3500px'; });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(300);
+  const hidden = () => page.locator('.header__search').evaluate((el) => el.classList.contains('is-hidden'));
+  expect(!(await hidden()), 'search should show at the top');
+  await page.mouse.move(600, 500);
+  for (let i = 0; i < 4; i += 1) { await page.mouse.wheel(0, 300); await page.waitForTimeout(80); }
+  await page.waitForFunction(() => document.querySelector('.header__search').classList.contains('is-hidden'));
+  await shot('25-search-hidden');
+  for (let i = 0; i < 2; i += 1) { await page.mouse.wheel(0, -200); await page.waitForTimeout(80); }
+  await page.waitForFunction(() => !document.querySelector('.header__search').classList.contains('is-hidden'));
+  // The "/" shortcut brings a hidden search back and focuses it.
+  for (let i = 0; i < 4; i += 1) { await page.mouse.wheel(0, 300); await page.waitForTimeout(80); }
+  await page.waitForFunction(() => document.querySelector('.header__search').classList.contains('is-hidden'));
+  await page.keyboard.press('/');
+  await page.waitForFunction(() => document.activeElement?.classList.contains('searchbar__input'));
+  await page.evaluate(() => { document.querySelector('.main').style.minHeight = ''; window.scrollTo(0, 0); });
+  await page.keyboard.press('Escape');
+});
+
+await check('Lite performance mode removes blur and background animation', async () => {
+  await page.click('.header [aria-label="Settings"]');
+  await page.waitForSelector('#set-perf-label');
+  await page.click('dialog[open] [role=radio]:text-is("Lite")');
+  await page.waitForFunction(() => document.documentElement.dataset.perf === 'lite');
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('dialog[open]', { state: 'detached' });
+  const lite = await page.evaluate(() => ({
+    header: getComputedStyle(document.querySelector('.header')).backdropFilter,
+    shape: getComputedStyle(document.querySelector('.ambient__shape--a')).animationName,
+    grain: getComputedStyle(document.querySelector('.ambient__grain')).display,
+  }));
+  expect(lite.header === 'none' && lite.shape === 'none' && lite.grain === 'none', `lite not applied: ${JSON.stringify(lite)}`);
+  await shot('26-lite-mode');
+  await page.click('.header [aria-label="Settings"]');
+  await page.click('dialog[open] [role=radio]:text-is("Auto")');
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('dialog[open]', { state: 'detached' });
+});
+
+await check('phone: menu opens the drawer, search floats under the header, Arabic works at 360px', async () => {
+  await page.setViewportSize({ width: 360, height: 780 });
+  await page.waitForTimeout(250);
+  await page.click('.header .header__menu');
+  await page.waitForSelector('.drawer.is-open');
+  await page.keyboard.press('Escape');
+  await page.waitForSelector('.drawer.is-open', { state: 'detached' });
+  const box = await page.locator('.header__search').boundingBox();
+  const header = await page.locator('.header').boundingBox();
+  expect(box.y >= header.y + header.height - 2, 'search should sit below the header on phones');
+  await page.click('.header__lang');
+  await page.waitForFunction(() => document.documentElement.dir === 'rtl');
+  await page.waitForTimeout(200);
+  await shot('27-arabic-phone');
+  const over = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+  expect(over <= 1, `overflow ${over}`);
+  await page.click('.header__lang');
+  await page.waitForFunction(() => document.documentElement.dir === 'ltr');
+  await resetViewport();
 });
 
 await check('no console errors or warnings during the whole run', async () => {

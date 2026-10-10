@@ -52,3 +52,11 @@ export class Component<P = {}, S = {}> {
   componentDidCatch?(error: Error, info: ErrorInfo): void;
 }
 export const StrictMode: FC<{ children?: ReactNode }>;
+export const Suspense: FC<{ fallback?: ReactNode; children?: ReactNode }>;
+export function lazy<P>(load: () => Promise<{ default: FC<P> }>): FC<P>;
+export function useSyncExternalStore<T>(
+  subscribe: (notify: () => void) => () => void,
+  getSnapshot: () => T,
+  getServerSnapshot?: () => T,
+): T;
+export function useDeferredValue<T>(value: T): T;

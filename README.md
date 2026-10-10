@@ -17,10 +17,22 @@ and no analytics**. Everything you save stays in your browser (IndexedDB) on you
   category, platform, tags, favorites, date) and six sort orders.
 - Duplicate-URL detection (“This URL already exists”) that never merges genuinely different URLs.
 - JSON backup/restore (merge or replace) with strict validation and sanitisation.
+- **Arabic and English.** A language button in the header (and in Settings) switches every label, message,
+  date and count between Arabic (right-to-left) and English. The choice is remembered; on a first visit it follows
+  the browser language. Starter categories are shown translated until you rename them. Your own content is never
+  translated.
+- **Hide / show the library menu.** The button at the start of the header hides or shows the sidebar on desktop
+  (remembered), and opens the drawer on tablets and phones.
+- **Search bar that steps aside.** It slides away while you read down a page and returns when you scroll back
+  up (or press `/` or Ctrl/Cmd+K). It never hides while you are typing in it.
+- **Fast on weak devices.** Dialogs and the Arabic text load on demand, repeated cards skip blur and off-screen
+  work, and a *Lite* mode (automatic on low-memory / few-core devices, or chosen in Settings → Performance)
+  removes blur and background animation.
 - Light / dark / system theme, reduced-motion support, responsive layouts with a phone bottom bar and
-  drawer, keyboard accessible dialogs, RTL-ready logical CSS.
+  drawer, keyboard accessible dialogs, RTL layout.
 - Installable PWA with an offline-first service worker.
-- A 5-second branded intro with a skip button and a hard timer, so it can never trap you.
+- A branded intro with a skip button and a hard timer, so it can never trap you: the full 5 seconds on your first
+  visit, 2 seconds on later visits (`SPLASH_DURATION_MS` / `SPLASH_RETURNING_MS` in `src/config/app.ts`).
 
 ## Quick start
 
@@ -67,6 +79,7 @@ sizes and honestly labels browser-provided numbers as estimates.
 
 ```
 src/
+  i18n/          en.ts (every message key), ar.ts (Arabic), core.ts (translate, plurals), index.tsx (provider)
   config/        brand.json (name, tagline), app.ts (types, platforms, starter categories, limits), icons.ts
   types/         Resource, Category, AppSettings, ImportExportSchema, DatabaseSchema, ...
   data/
@@ -89,6 +102,9 @@ use a `StorageAdapter`.
 
 ### Customising
 
+- **Interface text / adding a language:** every string lives in `src/i18n/en.ts`. `src/i18n/ar.ts` must define
+  the same keys (TypeScript and `tests/i18n.test.ts` enforce it). To add a language, add its code to `LANGUAGES`
+  in `src/types/index.ts`, create a dictionary file, and register it in `src/i18n/core.ts`.
 - **Name and tagline:** `src/config/brand.json`.
 - **Starter categories, resource types, platforms, limits:** `src/config/app.ts`.
 - **Colours:** every colour is a CSS variable in `src/styles/tokens.css` (light and dark).
@@ -160,7 +176,10 @@ downloaded. Automatic metadata for other sites needs a server; see [docs/METADAT
 - Thumbnails other than YouTube need a pasted image URL, and remote images only show when online.
 - The category map is a structured tree view, not a free-form graph editor, and there is no drag-and-drop
   reordering yet.
-- Right-to-left layout is prepared (logical CSS properties, `dir` aware rules) but the UI text is English only.
+- The interface is available in English and Arabic only. The Arabic text was written for this project and has
+  not been reviewed by a professional translator; corrections are welcome in `src/i18n/ar.ts`.
+- The search bar hides when you scroll *down* the page and returns when you scroll *up*; this is the usual
+  convention and is set in `src/hooks/useHideOnScroll.ts`.
 
 ## License
 
